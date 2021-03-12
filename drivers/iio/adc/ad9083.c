@@ -14,13 +14,86 @@
 #include <linux/spi/spi.h>
 #include <asm/unaligned.h>
 
+#include "cf_axi_adc.h"
+#include <linux/jesd204/jesd204.h>
+
+struct ad9083_jesd204_priv {
+	struct ad9083_phy *phy;
+};
+
+struct ad9083_phy {
+//	ad9208_handle_t ad9208;
+	struct axiadc_chip_info chip_info;
+	struct jesd204_dev *jdev;
+	struct jesd204_link jesd204_link;
+};
+
+static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
+		enum jesd204_state_op_reason reason,
+		struct jesd204_link *lnk)
+{
+	struct device *dev = jesd204_dev_to_device(jdev);
+	struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
+	struct ad9083_phy *phy = priv->phy;
+	struct jesd204_link *link;
+
+	switch (reason) {
+	case JESD204_STATE_OP_REASON_INIT:
+		break;
+	default:
+		return JESD204_STATE_CHANGE_DONE;
+	}
+
+	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
+		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
+
+	link = &phy->jesd204_link;
+
+	jesd204_copy_link_params(lnk, link);
+
+	lnk->sample_rate = phy->sampling_frequency_hz;
+	lnk->sample_rate_div = phy->dcm;
+	lnk->jesd_encoder = JESD204_ENCODER_8B10B;
+
+	//if (phy->sysref_mode == AD9208_SYSREF_CONT)
+		lnk->sysref.mode = JESD204_SYSREF_CONTINUOUS;
+	//else if (phy->sysref_mode == AD9208_SYSREF_ONESHOT)
+//		lnk->sysref.mode = JESD204_SYSREF_ONESHOT;
+
+	return JESD204_STATE_CHANGE_DONE;
+}
+
+static const struct jesd204_dev_data jesd204_ad9083_init = {
+	.state_ops = {
+		[JESD204_OP_LINK_INIT] = {
+			.per_link = ad9083_jesd204_link_init,
+		},
+		[JESD204_OP_CLOCKS_ENABLE] = {
+			.per_link = ad9083_jesd204_clks_enable,
+		},
+		[JESD204_OP_LINK_ENABLE] = {
+			.per_link = ad9083_jesd204_link_enable,
+			.post_state_sysref = true,
+		},
+	},
+
+	.max_num_links = 1,
+	.num_retries = 3,
+	.sizeof_priv = sizeof(struct ad9083_jesd204_priv),
+};
+
 static int ad9083_probe(struct spi_device *spi)
 {
 	struct iio_dev *indio_dev;
-	struct ad9083_state *st;
+//	struct ad9083_state *st;
+	struct jesd204_dev *jdev;
 	int ret;
 
 	printk("==============================================ad9083 probed===============================================");
+
+	jdev = devm_jesd204_dev_register(&spi->dev, &jesd204_ad9083_init);
+	if (IS_ERR(jdev))
+		return PTR_ERR(jdev);
 
 	return 0;
 }

@@ -7,7 +7,7 @@
 #include <dt-bindings/iio/frequency/ad9528.h>
 
 &fmc_spi {
-	clk0_ad9528: ad9528-1@0 {
+	ad9528: ad9528@0 {
 		compatible = "adi,ad9528";
 		reg = <0>;
 
@@ -35,15 +35,15 @@
 		adi,pll1-charge-pump-current-nA = <5000>;
 
 		/* PLL2 config */
-		adi,pll2-vco-div-m1 = <3>; /* use 5 for 184320000 output device clock */
-		adi,pll2-n2-div = <10>; /* N / M1 */
+		adi,pll2-vco-div-m1 = <4>;
+		adi,pll2-n2-div = <10>;
 		adi,pll2-r1-div = <1>;
 		adi,pll2-charge-pump-current-nA = <805000>;
 
 		/* SYSREF config */
 		adi,sysref-src = <SYSREF_SRC_INTERNAL>;
 		adi,sysref-pattern-mode = <SYSREF_PATTERN_CONTINUOUS>;
-		adi,sysref-k-div = <512>;
+		adi,sysref-k-div = <768>;
 		adi,sysref-request-enable;
 		adi,sysref-nshot-mode = <SYSREF_NSHOT_4_PULSES>;
 		adi,sysref-request-trigger-mode = <SYSREF_LEVEL_HIGH>;
@@ -60,7 +60,7 @@
 			adi,extended-name = "FPGA_SYSREF_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <5>;
+			adi,channel-divider = <1>; /* only sysref-k-div when FPGA_SYSREF_CLK */
 			adi,signal-source = <SOURCE_SYSREF_VCO>;
 		};
 
@@ -69,7 +69,7 @@
 			adi,extended-name = "FPGA_GLBL_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <5>;
+			adi,channel-divider = <8>;
 			adi,signal-source = <SOURCE_VCO>;
 		};
 
@@ -78,13 +78,13 @@
 			adi,extended-name = "FPGA_REF_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <5>;
+			adi,channel-divider = <2>;
 			adi,signal-source = <SOURCE_VCO>;
 		};
 
 		ad9528_0_c12: channel@12 {
 			reg = <12>;
-			adi,extended-name = "ADC_SYSREF_CLK";
+			adi,extended-name = "ADC_SYSREF_CLK"; /* only sysref-k-div when FPGA_SYSREF_CLK */
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
 			adi,channel-divider = <5>;
@@ -96,7 +96,7 @@
 			adi,extended-name = "ADC_REF_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <5>;
+			adi,channel-divider = <4>;
 			adi,signal-source = <SOURCE_VCO>;
 		};
 	};
@@ -107,9 +107,8 @@
 		compatible = "adi,ad9083";
 		reg = <1>;
 		spi-max-frequency = <1000000>;
-		clocks = <&clk0_ad9528 0>, <&clk0_ad9528 0>, <&clk0_ad9528 0>,
-				<&clk0_ad9528 0>, <&clk0_ad9528 0>;
-		clock-names = "jesd_dac_clk", "dac_clk", "dac_sysref";
+		clocks = <&ad9528 12>, <&ad9528 13>;
+		clock-names = "adc_sysref", "adc_ref_clk";
 
 		adi,dac-rate-khz = <3000000>;
 		adi,jesd-link-mode = <10>;

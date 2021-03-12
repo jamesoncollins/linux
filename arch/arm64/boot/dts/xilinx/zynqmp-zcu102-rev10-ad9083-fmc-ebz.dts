@@ -59,14 +59,13 @@
 			//jesd204-inputs = <&axi_ad9083_rx_jesd 0 FRAMER_LINK0_RX>;
 		};
 
-/*
 		axi_ad9083_rx_jesd: axi-jesd204-rx@0x84AA0000 {
 			compatible = "adi,axi-jesd204-rx-1.0";
 			reg = <0x84AA0000 0x1000>;
 
 			interrupts = <0 107 IRQ_TYPE_LEVEL_HIGH>;
 
-			clocks = <&zynqmp_clk 71>, <&hmc7044 10>, <&axi_ad9083_adxcvr_rx 0>;
+			clocks = <&zynqmp_clk 71>, <&ad9528 1>, <&axi_ad9083_adxcvr_rx 0>;
 			clock-names = "s_axi_aclk", "device_clk", "lane_clk";
 
 			#clock-cells = <0>;
@@ -74,7 +73,9 @@
 
 			jesd204-device;
 			#jesd204-cells = <2>;
-			jesd204-inputs = <&axi_ad9083_adxcvr_rx 0 FRAMER_LINK0_RX>;
+			//jesd204-inputs = <&axi_ad9083_adxcvr_rx 0 FRAMER_LINK0_RX>;
+			adi,octets-per-frame = <8>;
+			adi,frames-per-multiframe = <32>;
 		};
 
 		axi_ad9083_adxcvr_rx: axi-adxcvr-rx@84a60000 {
@@ -83,26 +84,26 @@
 			compatible = "adi,axi-adxcvr-1.0";
 			reg = <0x84a60000 0x1000>;
 
-			clocks = <&hmc7044 12>;
+			clocks = <&ad9528 3>;
 			clock-names = "conv";
 
 			#clock-cells = <1>;
 			clock-output-names = "rx_gt_clk", "rx_out_clk";
 
-			adi,sys-clk-select = <XCVR_CPLL>;
+			adi,sys-clk-select = <XCVR_QPLL>;
 			adi,out-clk-select = <XCVR_REFCLK_DIV2>;
  			adi,use-lpm-enable;
 
-			jesd204-device;
+			//jesd204-device;
 			#jesd204-cells = <2>;
-			jesd204-inputs =  <&hmc7044 0 FRAMER_LINK0_RX>;
+			//jesd204-inputs =  <&hmc7044 0 FRAMER_LINK0_RX>;
 		};
 
 		axi_sysid_0: axi-sysid-0@85000000 {
 			compatible = "adi,axi-sysid-1.00.a";
 			reg = <0x85000000 0x10000>;
 		};
-		*/
+
 	};
 };
 
