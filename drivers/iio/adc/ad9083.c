@@ -14,18 +14,31 @@
 #include <linux/spi/spi.h>
 #include <asm/unaligned.h>
 
+
+#include <linux/kernel.h>
+
+#include <linux/of.h>
+#include <linux/slab.h>
+#include <linux/debugfs.h>
+
+
 #include "cf_axi_adc.h"
 #include <linux/jesd204/jesd204.h>
+
+#include "ad9083/adi_ad9083.h"
+//	#include "ad9083/uc_settings.h"
 
 struct ad9083_jesd204_priv {
 	struct ad9083_phy *phy;
 };
 
 struct ad9083_phy {
-//	ad9208_handle_t ad9208;
+	adi_ad9083_device_t	adi_ad9083;
 	struct axiadc_chip_info chip_info;
 	struct jesd204_dev *jdev;
 	struct jesd204_link jesd204_link;
+	u32 dcm;
+	u64 sampling_frequency_hz;
 };
 
 static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
@@ -63,6 +76,30 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	return JESD204_STATE_CHANGE_DONE;
 }
 
+
+static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
+		enum jesd204_state_op_reason reason,
+		struct jesd204_link *lnk)
+{
+	//struct uc_settings *uc_settings = get_uc_settings();
+	// adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
+	struct device *dev = jesd204_dev_to_device(jdev);
+	struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
+	struct ad9083_phy *phy = priv->phy;
+	int ret;
+
+	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
+		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
+
+	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, NULL);
+	if (ret < 0) {
+		dev_err(dev, "Failed to enabled JESD204 link (%d)\n", ret);
+		return ret;
+	}
+
+	return JESD204_STATE_CHANGE_DONE;
+}
+
 static const struct jesd204_dev_data jesd204_ad9083_init = {
 	.state_ops = {
 		[JESD204_OP_LINK_INIT] = {
@@ -72,7 +109,7 @@ static const struct jesd204_dev_data jesd204_ad9083_init = {
 			.per_link = ad9083_jesd204_clks_enable,
 		},
 		[JESD204_OP_LINK_ENABLE] = {
-			.per_link = ad9083_jesd204_link_enable,
+			.per_link = NULL,//ad9083_jesd204_link_enable,
 			.post_state_sysref = true,
 		},
 	},
