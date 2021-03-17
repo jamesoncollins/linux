@@ -7,9 +7,9 @@
 #include <dt-bindings/iio/frequency/ad9528.h>
 
 &fmc_spi {
-	ad9528: ad9528@0 {
+	ad9528: ad9528@1 {
 		compatible = "adi,ad9528";
-		reg = <0>;
+		reg = <1>;
 
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -101,11 +101,11 @@
 		};
 	};
 
-	adc0_ad9083: ad9083@1 {
+	adc0_ad9083: ad9083@0 {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "adi,ad9083";
-		reg = <1>;
+		reg = <0>;
 		spi-max-frequency = <1000000>;
 		clocks = <&ad9528 12>, <&ad9528 13>;
 		clock-names = "adc_sysref", "adc_ref_clk";

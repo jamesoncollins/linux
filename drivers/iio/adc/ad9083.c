@@ -399,19 +399,28 @@ static int ad9083_probe(struct spi_device *spi)
 	int ret;
 
 	printk("==============================================ad9083 probed===============================================");
+	
+	if (!spi) {
+		return -ENOENT;
+		printk("ad9083_0001 pointer null\n");
+	}
+	printk("ad9083_001\n");
 
 	jdev = devm_jesd204_dev_register(&spi->dev, &jesd204_ad9083_init);
+	printk("ad9083_01\n");
 	if (IS_ERR(jdev))
 		return PTR_ERR(jdev);
-
+	printk("ad9083_1\n");
 	conv = devm_kzalloc(&spi->dev, sizeof(*conv), GFP_KERNEL);
 	if (conv == NULL)
 		return -ENOMEM;
-
+	
+	printk("ad9083_2\n");
 	phy = devm_kzalloc(&spi->dev, sizeof(*phy), GFP_KERNEL);
 	if (phy == NULL)
 		return -ENOMEM;
 
+	printk("ad9083_3\n");
 	conv->adc_clkscale.mult = 1;
 	conv->adc_clkscale.div = 1;
 
@@ -419,6 +428,7 @@ static int ad9083_probe(struct spi_device *spi)
 	conv->spi = spi;
 	conv->phy = phy;
 
+	printk("ad9083_4\n");
 	if (jdev) {
 		phy->jdev = jdev;
 		priv = jesd204_dev_priv(jdev);
@@ -432,7 +442,7 @@ static int ad9083_probe(struct spi_device *spi)
 	phy->adi_ad9083.hal_info.addr_inc = SPI_ADDR_INC_AUTO;
 	phy->adi_ad9083.hal_info.log_write = ad9083_log_write;
 	
-
+	printk("ad9083_5\n");
 	ret = ad9083_parse_dt(phy, &spi->dev);
 	if (ret < 0) {
 		dev_err(&spi->dev, "Parsing devicetree failed (%d)\n", ret);
@@ -448,7 +458,7 @@ static int ad9083_probe(struct spi_device *spi)
 	conv->reg_access = ad9083_reg_access;
 	// conv->write_raw = ad9208_write_raw;
 	// conv->read_raw = ad9208_read_raw;
-
+	printk("ad9083_6\n");
 	return 0;
 }
 

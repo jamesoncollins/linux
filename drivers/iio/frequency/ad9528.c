@@ -919,7 +919,7 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 			 AD9528_SER_CONF_SDO_ACTIVE));
 	if (ret < 0)
 		return ret;
-
+	printk("ad9528 3.1\n");
 	ret = ad9528_write(indio_dev, AD9528_SERIAL_PORT_CONFIG_B,
 			AD9528_SER_CONF_READ_BUFFERED);
 	if (ret < 0)
@@ -928,17 +928,18 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 	ret = ad9528_io_update(indio_dev);
 	if (ret < 0)
 		return ret;
-
+printk("ad9528 3.2\n");
 	ret = ad9528_read(indio_dev, AD9528_CHIP_ID);
 	if (ret < 0)
 		return ret;
-
+printk("ad9528 3.3\n");
 	if (ret != AD9528_SPI_MAGIC) {
+		printk("ad9528 3.3.1\n");
 		dev_err(&indio_dev->dev,
 				"SPI Read Verify failed (0x%X)\n", ret);
 		return -EIO;
 	}
-
+printk("ad9528 3.3.2\n");
 	/*
 	 * PLL1 Setup
 	 */
@@ -946,7 +947,7 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 		pdata->refa_r_div);
 	if (ret < 0)
 		return ret;
-
+printk("ad9528 3.4\n");
 	ret = ad9528_write(indio_dev, AD9528_PLL1_REF_B_DIVIDER,
 		pdata->refb_r_div);
 	if (ret < 0)
@@ -956,7 +957,7 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 		pdata->pll1_feedback_div);
 	if (ret < 0)
 		return ret;
-
+printk("ad9528 3.5\n");
 	ret = ad9528_write(indio_dev, AD9528_PLL1_CHARGE_PUMP_CTRL,
 		AD_IFE(pll1_bypass_en, AD9528_PLL1_CHARGE_PUMP_TRISTATE,
 		AD9528_PLL1_CHARGE_PUMP_CURRENT_nA(pdata->
@@ -987,7 +988,7 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 		AD9528_PLL1_OSC_CTRL_FAIL_VCC_BY2_EN);
 	if (ret < 0)
 		return ret;
-
+printk("ad9528 3.6\n");
 	/*
 	 * PLL2 Setup
 	 */
@@ -1554,6 +1555,7 @@ static int ad9528_probe(struct spi_device *spi)
 	struct gpio_desc *status1_gpio;
 	struct clk *clk;
 	int ret;
+	printk("==============================================ad9528 probed===============================================");
 
 	clk = devm_clk_get(&spi->dev, NULL);
 	if (PTR_ERR(clk) == -EPROBE_DEFER)
@@ -1580,19 +1582,20 @@ static int ad9528_probe(struct spi_device *spi)
 		return PTR_ERR(st->jdev);
 
 	mutex_init(&st->lock);
-
+	printk("ad9528 0\n");
 	st->reg = devm_regulator_get(&spi->dev, "vcc");
 	if (!IS_ERR(st->reg)) {
+		printk("ad9528 01\n");
 		ret = regulator_enable(st->reg);
 		if (ret)
 			return ret;
-
+		printk("ad9528 02\n");
 		ret = devm_add_action_or_reset(&spi->dev, ad9528_reg_disable,
 					       st->reg);
 		if (ret)
 			return ret;
 	}
-
+	printk("ad9528 2\n");
 	status0_gpio = devm_gpiod_get_optional(&spi->dev,
 					"status0", GPIOD_OUT_LOW);
 	status1_gpio = devm_gpiod_get_optional(&spi->dev,
@@ -1603,7 +1606,7 @@ static int ad9528_probe(struct spi_device *spi)
 		udelay(1);
 		ret = gpiod_direction_output(st->reset_gpio, 1);
 	}
-
+	printk("ad9528 3\n");
 	mdelay(10);
 
 	if (!PTR_ERR_OR_ZERO(status0_gpio))
@@ -1626,11 +1629,11 @@ static int ad9528_probe(struct spi_device *spi)
 	ret = ad9528_setup(indio_dev);
 	if (ret < 0)
 		return ret;
-
+	printk("ad9528 4\n");
 	ret = devm_iio_device_register(&spi->dev, indio_dev);
 	if (ret)
 		return ret;
-
+	printk("ad9528 5\n");
 	return jesd204_fsm_start(st->jdev, JESD204_LINKS_ALL);
 }
 
