@@ -31,6 +31,9 @@
 #define IN_OUT_BUFF_SZ 3
 #define MAX_REG_ADDR		0x1000
 
+#define CHIPID_AD9083		0x00EA
+#define CHIPID_MASK			0xFFFF
+
 struct ad9083_jesd204_priv {
 	struct ad9083_phy *phy;
 };
@@ -42,6 +45,7 @@ struct ad9083_phy {
 	struct jesd204_link jesd204_link;
 	u32 dcm;
 	u64 sampling_frequency_hz;
+	u32 uc;
 };
 
 static int ad9083_udelay(void *user_data, unsigned int us)
@@ -249,6 +253,112 @@ static const struct jesd204_dev_data jesd204_ad9083_init = {
 	.sizeof_priv = sizeof(struct ad9083_jesd204_priv),
 };
 
+static int ad9083_request_clks(struct axiadc_converter *conv)
+{
+	struct ad9083_phy *phy = conv->phy;
+	int ret;
+
+	printk("ad9083_request_clks 1\n");
+	conv->clk = devm_clk_get(&conv->spi->dev, "adc_clk");
+	if (IS_ERR(conv->clk) && PTR_ERR(conv->clk) != -ENOENT)
+		return PTR_ERR(conv->clk);
+
+	if (phy->jdev)
+		return 0;
+	printk("ad9083_request_clks 2\n");
+	conv->lane_clk = devm_clk_get(&conv->spi->dev, "jesd_adc_clk");
+	if (IS_ERR(conv->lane_clk) && PTR_ERR(conv->lane_clk) != -ENOENT) {
+		pr_err("ad9083_request_clks 3: %d",PTR_ERR(conv->lane_clk));
+		return PTR_ERR(conv->lane_clk);
+	}
+
+	printk("ad9083_request_clks 4\n");
+	conv->sysref_clk = devm_clk_get(&conv->spi->dev, "adc_sysref");
+	if (IS_ERR(conv->sysref_clk)) {
+		if (PTR_ERR(conv->sysref_clk) != -ENOENT)
+			return PTR_ERR(conv->sysref_clk);
+		conv->sysref_clk = NULL;
+		printk("ad9083_request_clks 5\n");
+	} else {
+		ret = clk_prepare_enable(conv->sysref_clk);
+		if (ret < 0)
+			return ret;
+		printk("ad9083_request_clks 6\n");
+	}
+	printk("ad9083_request_clks 7\n");
+	return 0;
+}
+
+static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
+{
+	struct axiadc_converter *conv = spi_get_drvdata(spi);
+	struct ad9083_phy *phy = conv->phy;
+	adi_cms_chip_id_t chip_id;
+	struct uc_settings *uc_settings = get_uc_settings();
+	uint64_t *clk_hz = uc_settings->clk_hz[uc];
+	uint32_t vmax = uc_settings->vmax[uc];
+	uint32_t fc = uc_settings->fc[uc];
+	uint8_t rterm = uc_settings->rterm[uc];
+	uint32_t en_hp = uc_settings->en_hp[uc];
+	uint32_t backoff = uc_settings->backoff[uc];
+	uint32_t finmax = uc_settings->finmax[uc];
+	uint64_t *nco_freq_hz = uc_settings->nco_freq_hz[uc];
+	uint8_t *decimation = uc_settings->decimation[uc];
+	uint8_t nco0_datapath_mode = uc_settings->nco0_datapath_mode[uc];
+	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
+	int32_t ret;
+
+
+	printk(KERN_INFO"ad9083 ad9083_setup spi->dev.init_name=%s\n", spi->dev.driver->name);
+	ret = ad9083_request_clks(conv);
+	if (ret)
+		return ret;
+
+	printk(KERN_INFO"ad9083 ad9083_setup uc=%d\n", uc);
+
+	ret = adi_ad9083_device_chip_id_get(&phy->adi_ad9083, &chip_id);
+	if (ret < 0) {
+		printk("ad9083 adi_ad9083_device_chip_id_get error 0\n");
+		return ret;
+	}
+	if ((chip_id.prod_id & CHIPID_MASK) != CHIPID_AD9083) {
+		printk("ad9083 adi_ad9083_device_chip_id_get error 1\n");
+		return -ENOENT;
+	}
+	printk("ad9083 adi_ad9083_device_chip_id_get OK!!!\n");
+
+
+	/* software reset, resistor is not mounted */
+	ret = adi_ad9083_device_reset(&phy->adi_ad9083, AD9083_SOFT_RESET);
+	if (ret < 0)
+		return ret;
+
+	ret = adi_ad9083_device_init(&phy->adi_ad9083);
+	if (ret < 0)
+		return ret;
+
+	ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083, clk_hz[2],
+			clk_hz[0]);
+	if (ret < 0)
+		return ret;
+
+	ret = adi_ad9083_rx_adc_config_set(&phy->adi_ad9083, vmax, fc,
+					   rterm, en_hp, backoff, finmax);
+	if (ret < 0)
+		return ret;
+
+	ret = adi_ad9083_rx_datapath_config_set(&phy->adi_ad9083,
+						nco0_datapath_mode, decimation, nco_freq_hz);
+	if (ret < 0)
+		return ret;
+
+	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, jtx_param);
+	if (ret < 0)
+		return ret;
+	printk("ad9083 ad9083_setup OK!!!\n");
+	return 0;
+}
+
 static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
@@ -256,6 +366,9 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	u32 tmp, reg;
 	int ret;
 
+	of_property_read_u32(np, "adi,uc", &tmp);
+	phy->uc = tmp;
+	printk(KERN_INFO"ad9083 uc=%d\n", tmp);
 	/* Pin Config */
 
 	// phy->powerdown_pin_en = of_property_read_bool(np,
@@ -449,11 +562,11 @@ static int ad9083_probe(struct spi_device *spi)
 		return -ENODEV;
 	}
 
-	// ret = ad9083_init(&phy->adi_ad9083);
-	// if (ret < 0) {
-	// 	dev_err(&spi->dev, "init failed (%d)\n", ret);
-	// 	return -ENODEV;
-	// }
+	ret = ad9083_setup(spi, phy->uc);
+	if (ret < 0) {
+		dev_err(&spi->dev, "init failed (%d)\n", ret);
+	 	return -ENODEV;
+	}
 
 	conv->reg_access = ad9083_reg_access;
 	// conv->write_raw = ad9208_write_raw;

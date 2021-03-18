@@ -52,6 +52,8 @@
 			reg = <0x84a00000 0x8000>;
 			dmas = <&rx_dma 0>;
 			dma-names = "rx";
+			//clocks = <&axi_ad9083_rx_jesd>, <&ad9528 12>, <&ad9528 13>;
+			//clock-names = "jesd_adc_clk", "adc_sysref", "adc_ref_clk";
 			spibus-connected = <&adc0_ad9083>;
 
 			jesd204-device;
