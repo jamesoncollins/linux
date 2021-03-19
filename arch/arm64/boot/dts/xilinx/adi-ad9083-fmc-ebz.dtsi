@@ -32,8 +32,10 @@
 		adi,osc-in-cmos-neg-inp-enable;
 
 		/* PLL1 config */
+		adi,pll1-feedback-src-vcxo;
 		adi,pll1-feedback-div = <4>;
 		adi,pll1-charge-pump-current-nA = <5000>;
+		adi,osc-in-diff-enable;
 
 		/* PLL2 config */
 		/*
@@ -42,10 +44,10 @@
 		 *    862.500 MHz - 1006.250 MHz
 		 *    690.000 MHz -  805.000 MHz
 		 */
-		adi,pll2-m1-frequency = <1000000000>;
-		//adi,pll2-vco-div-m1 = <4>;
-		//adi,pll2-n2-div = <10>;
-		//adi,pll2-r1-div = <1>;
+		//adi,pll2-m1-frequency = <1000000000>;
+		adi,pll2-vco-div-m1 = <4>;
+		adi,pll2-n2-div = <10>;
+		adi,pll2-r1-div = <1>;
 		adi,pll2-charge-pump-current-nA = <805000>;
 
 		/* SYSREF config */

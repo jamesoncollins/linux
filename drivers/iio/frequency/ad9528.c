@@ -5,7 +5,7 @@
  *
  * Licensed under the GPL-2.
  */
-#define DEBUG
+
 #include <linux/device.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -367,9 +367,7 @@ static int ad9528_poll(struct iio_dev *indio_dev,
 	while (((ad9528_read(indio_dev, addr) & mask) != data)
 			&& --timeout)
 		msleep(1);
-	
-	printk(KERN_INFO "ad9528 3.1821 ret: %d\n", ad9528_read(indio_dev, addr));
-	
+
 	return timeout ? 0 : -ETIMEDOUT;
 }
 
@@ -921,7 +919,7 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 			 AD9528_SER_CONF_SDO_ACTIVE));
 	if (ret < 0)
 		return ret;
-	printk("ad9528 3.1\n");
+
 	ret = ad9528_write(indio_dev, AD9528_SERIAL_PORT_CONFIG_B,
 			AD9528_SER_CONF_READ_BUFFERED);
 	if (ret < 0)
@@ -930,25 +928,16 @@ static int ad9528_setup(struct iio_dev *indio_dev)
 	ret = ad9528_io_update(indio_dev);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.2\n");
+
 	ret = ad9528_read(indio_dev, AD9528_CHIP_ID);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.3\n");
+
 	if (ret != AD9528_SPI_MAGIC) {
-		printk("ad9528 3.3.1\n");
 		dev_err(&indio_dev->dev,
 				"SPI Read Verify failed (0x%X)\n", ret);
 		return -EIO;
 	}
-printk("KERN_INFO ad9528 3.3.2 AD9528_SPI_MAGIC : %x\n", ret);
-	// ret = ad9528_write(indio_dev, 0x100, 0xae);
-	// if (ret < 0)
-	// 	return ret;
-	// ret = ad9528_read(indio_dev, 0x100);
-	// if (ret < 0)
-	// 	return ret;
-	// printk("KERN_INFO ad9528 3.3.4 read : %x\n", ret);
 
 	/*
 	 * PLL1 Setup
@@ -957,7 +946,7 @@ printk("KERN_INFO ad9528 3.3.2 AD9528_SPI_MAGIC : %x\n", ret);
 		pdata->refa_r_div);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.4\n");
+
 	ret = ad9528_write(indio_dev, AD9528_PLL1_REF_B_DIVIDER,
 		pdata->refb_r_div);
 	if (ret < 0)
@@ -967,7 +956,7 @@ printk("ad9528 3.4\n");
 		pdata->pll1_feedback_div);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.5\n");
+
 	ret = ad9528_write(indio_dev, AD9528_PLL1_CHARGE_PUMP_CTRL,
 		AD_IFE(pll1_bypass_en, AD9528_PLL1_CHARGE_PUMP_TRISTATE,
 		AD9528_PLL1_CHARGE_PUMP_CURRENT_nA(pdata->
@@ -998,22 +987,21 @@ printk("ad9528 3.5\n");
 		AD9528_PLL1_OSC_CTRL_FAIL_VCC_BY2_EN);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.6\n");
+
 	/*
 	 * PLL2 Setup
 	 */
 
 	if (pdata->pll2_bypass_en) {
-		printk(KERN_INFO "ad9528 3.61 pdata->pll2_bypass_en: %d\n", pdata->pll2_bypass_en);
 		ret = ad9528_write(indio_dev, AD9528_PLL2_CTRL,
 				   AD9528_PLL2_CHARGE_PUMP_MODE_TRISTATE);
 		if (ret < 0)
 			return ret;
-		printk(KERN_INFO "ad9528 3.62 ret: %d\n", ret);
+
 		ret = ad9528_write(indio_dev, AD9528_SYSREF_RESAMPLE_CTRL, BIT(0));
 		if (ret < 0)
 			return ret;
-	printk(KERN_INFO "ad9528 3.63 ret: %d\n", ret);
+
 		pdata->sysref_src = SYSREF_SRC_EXTERNAL;
 
 		st->vco_out_freq[AD9528_VCO] = pdata->vcxo_freq;
@@ -1023,7 +1011,7 @@ printk("ad9528 3.6\n");
 		goto pll2_bypassed;
 	}
 
-printk("ad9528 3.7\n");
+
 	pll2_ndiv = pdata->pll2_vco_div_m1 * pdata->pll2_n2_div;
 	if (!ad9528_pll2_valid_calib_div(pll2_ndiv)) {
 		dev_err(&st->spi->dev,
@@ -1031,7 +1019,7 @@ printk("ad9528 3.7\n");
 			pll2_ndiv);
 		return -EINVAL;
 	}
-printk("ad9528 3.8\n");
+
 	pll2_ndiv_a_cnt = pll2_ndiv % 4;
 	pll2_ndiv_b_cnt = pll2_ndiv / 4;
 
@@ -1046,14 +1034,14 @@ printk("ad9528 3.8\n");
 		AD9528_PLL2_FB_NDIV_B_CNT(pll2_ndiv_b_cnt));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.9\n");
+
 	ret = ad9528_write(indio_dev, AD9528_PLL2_CTRL,
 		AD9528_PLL2_CHARGE_PUMP_MODE_NORMAL |
 		AD_IF(pll2_freq_doubler_en, AD9528_PLL2_FREQ_DOUBLER_EN));
 	if (ret < 0)
 		return ret;
 
-printk("ad9528 3.10\n");
+
 	vco_freq = div_u64((unsigned long long)pdata->vcxo_freq *
 			   (pdata->pll2_freq_doubler_en ? 2 : 1) * pll2_ndiv,
 			    pdata->pll2_r1_div);
@@ -1064,14 +1052,13 @@ printk("ad9528 3.10\n");
 	if (ret < 0)
 		return ret;
 
-printk("ad9528 3.11\n");
 	ret = ad9528_write(indio_dev, AD9528_PLL2_VCO_DIVIDER,
 		AD9528_PLL2_VCO_DIV_M1(pdata->pll2_vco_div_m1) |
 		AD_IFE(pll2_vco_div_m1, 0,
 		       AD9528_PLL2_VCO_DIV_M1_PWR_DOWN_EN));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.12\n");
+
 	if (pdata->pll2_vco_div_m1)
 		st->vco_out_freq[AD9528_VCO] =
 			vco_freq / pdata->pll2_vco_div_m1;
@@ -1089,7 +1076,7 @@ printk("ad9528 3.12\n");
 		AD9528_PLL2_R1_DIV(pdata->pll2_r1_div));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.13\n");
+
 	ret = ad9528_write(indio_dev, AD9528_PLL2_N2_DIVIDER,
 		AD9528_PLL2_N2_DIV(pdata->pll2_n2_div));
 	if (ret < 0)
@@ -1103,7 +1090,7 @@ printk("ad9528 3.13\n");
 		      AD9528_PLL2_LOOP_FILTER_RZERO_BYPASS_EN));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.14\n");
+
 pll2_bypassed:
 	st->clk_data.clks = st->clks;
 	st->clk_data.clk_num = AD9528_NUM_CHAN;
@@ -1157,7 +1144,7 @@ pll2_bypassed:
 			AD9528_CHANNEL_PD_MASK(~active_mask));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.15\n");
+
 	ret = ad9528_write(indio_dev, AD9528_CHANNEL_SYNC_IGNORE,
 			AD9528_CHANNEL_IGNORE_MASK(ignoresync_mask));
 	if (ret < 0)
@@ -1167,7 +1154,7 @@ printk("ad9528 3.15\n");
 			AD9528_SYSREF_K_DIV(pdata->sysref_k_div));
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.16\n");
+
 	sysref_ctrl = AD9528_SYSREF_PATTERN_MODE(pdata->sysref_pattern_mode) |
 		AD9528_SYSREF_SOURCE(pdata->sysref_src) |
 		AD9528_SYSREF_NSHOT_MODE(pdata->sysref_nshot_mode) |
@@ -1176,7 +1163,7 @@ printk("ad9528 3.16\n");
 	ret = ad9528_write(indio_dev, AD9528_SYSREF_CTRL, sysref_ctrl);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.17\n");
+
 	ret = ad9528_write(indio_dev, AD9528_PD_EN, AD9528_PD_BIAS |
 			   AD_IF(pll1_bypass_en, AD9528_PD_PLL1) |
 			   AD_IF(pll2_bypass_en, AD9528_PD_PLL2));
@@ -1186,26 +1173,23 @@ printk("ad9528 3.17\n");
 	ret = ad9528_io_update(indio_dev);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.18\n");
+
 	if (!pdata->pll2_bypass_en) {
 		ret = ad9528_write(indio_dev, AD9528_PLL2_VCO_CTRL,
 				vco_ctrl | AD9528_PLL2_VCO_CALIBRATE);
-printk(KERN_INFO "ad9528 3.181 ret: %d\n", ret);
 		if (ret < 0)
 			return ret;
 
 		ret = ad9528_io_update(indio_dev);
-printk(KERN_INFO "ad9528 3.182 ret: %d\n", ret);
 		if (ret < 0)
 			return ret;
+
 		ret = ad9528_poll(indio_dev, AD9528_READBACK,
 				AD9528_IS_CALIBRATING, 0);
-printk(KERN_INFO "ad9528 3.183 ret: %d\n", ret);
 		if (ret < 0)
 			return ret;
-printk(KERN_INFO "ad9528 3.184 ret: %d\n", ret);
 	}
-printk("ad9528 3.19\n");
+
 	sysref_ctrl |= AD9528_SYSREF_PATTERN_REQ;
 	ret = ad9528_write(indio_dev, AD9528_SYSREF_CTRL, sysref_ctrl);
 	if (ret < 0)
@@ -1219,7 +1203,7 @@ printk("ad9528 3.19\n");
 
 		stat_en_mask |= AD9528_STAT0_PIN_EN;
 	}
-printk("ad9528 3.20\n");
+
 	if (pdata->stat1_pin_func_sel != 0xFF) {
 		ret = ad9528_write(indio_dev, AD9528_STAT_MON1,
 				   pdata->stat1_pin_func_sel);
@@ -1228,14 +1212,14 @@ printk("ad9528 3.20\n");
 
 		stat_en_mask |= AD9528_STAT1_PIN_EN;
 	}
-printk("ad9528 3.21\n");
+
 	if (stat_en_mask) {
 		ret = ad9528_write(indio_dev, AD9528_STAT_PIN_EN,
 				   stat_en_mask);
 		if (ret < 0)
 			return ret;
 	}
-printk("ad9528 3.22\n");
+
 	ret = ad9528_io_update(indio_dev);
 	if (ret < 0)
 		return ret;
@@ -1243,7 +1227,7 @@ printk("ad9528 3.22\n");
 	ret = ad9528_sync(indio_dev);
 	if (ret < 0)
 		return ret;
-printk("ad9528 3.23\n");
+
 	ret = ad9528_clks_register(indio_dev);
 	if (ret < 0)
 		return ret;
@@ -1261,8 +1245,12 @@ static int ad9528_jesd204_link_supported(struct jesd204_dev *jdev,
 	int ret;
 	unsigned long rate;
 
-	if (reason != JESD204_STATE_OP_REASON_INIT)
+	if (reason != JESD204_STATE_OP_REASON_INIT) {
+		st->jdev_lmfc_lemc_rate = 0;
+		st->jdev_lmfc_lemc_gcd = 0;
+
 		return JESD204_STATE_CHANGE_DONE;
+	}
 
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__, __LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
@@ -1570,7 +1558,6 @@ static int ad9528_probe(struct spi_device *spi)
 	struct gpio_desc *status1_gpio;
 	struct clk *clk;
 	int ret;
-	printk("==============================================ad9528 probed===============================================");
 
 	clk = devm_clk_get(&spi->dev, NULL);
 	if (PTR_ERR(clk) == -EPROBE_DEFER)
@@ -1597,20 +1584,19 @@ static int ad9528_probe(struct spi_device *spi)
 		return PTR_ERR(st->jdev);
 
 	mutex_init(&st->lock);
-	printk("ad9528 0\n");
+
 	st->reg = devm_regulator_get(&spi->dev, "vcc");
 	if (!IS_ERR(st->reg)) {
-		printk("ad9528 01\n");
 		ret = regulator_enable(st->reg);
 		if (ret)
 			return ret;
-		printk("ad9528 02\n");
+
 		ret = devm_add_action_or_reset(&spi->dev, ad9528_reg_disable,
 					       st->reg);
 		if (ret)
 			return ret;
 	}
-	printk("ad9528 2\n");
+
 	status0_gpio = devm_gpiod_get_optional(&spi->dev,
 					"status0", GPIOD_OUT_LOW);
 	status1_gpio = devm_gpiod_get_optional(&spi->dev,
@@ -1621,7 +1607,7 @@ static int ad9528_probe(struct spi_device *spi)
 		udelay(1);
 		ret = gpiod_direction_output(st->reset_gpio, 1);
 	}
-	printk("ad9528 3\n");
+
 	mdelay(10);
 
 	if (!PTR_ERR_OR_ZERO(status0_gpio))
@@ -1644,11 +1630,11 @@ static int ad9528_probe(struct spi_device *spi)
 	ret = ad9528_setup(indio_dev);
 	if (ret < 0)
 		return ret;
-	printk("ad9528 4\n");
+
 	ret = devm_iio_device_register(&spi->dev, indio_dev);
 	if (ret)
 		return ret;
-	printk("ad9528 5\n");
+
 	return jesd204_fsm_start(st->jdev, JESD204_LINKS_ALL);
 }
 
