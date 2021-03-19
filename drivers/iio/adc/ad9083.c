@@ -257,35 +257,63 @@ static int ad9083_request_clks(struct axiadc_converter *conv)
 {
 	struct ad9083_phy *phy = conv->phy;
 	int ret;
-
 	printk("ad9083_request_clks 1\n");
-	conv->clk = devm_clk_get(&conv->spi->dev, "adc_clk");
-	if (IS_ERR(conv->clk) && PTR_ERR(conv->clk) != -ENOENT)
+	conv->clk = devm_clk_get(&conv->spi->dev, "adc_ref_clk");
+	if (IS_ERR(conv->clk))
 		return PTR_ERR(conv->clk);
-
+	
 	if (phy->jdev)
 		return 0;
+
+
+	printk("ad9083_request_clks 3\n");
+	conv->sysref_clk = devm_clk_get(&conv->spi->dev, "adc_sysref");
+	if (IS_ERR(conv->lane_clk))
+		return PTR_ERR(conv->lane_clk);	
+
 	printk("ad9083_request_clks 2\n");
 	conv->lane_clk = devm_clk_get(&conv->spi->dev, "jesd_adc_clk");
-	if (IS_ERR(conv->lane_clk) && PTR_ERR(conv->lane_clk) != -ENOENT) {
-		pr_err("ad9083_request_clks 3: %d",PTR_ERR(conv->lane_clk));
+	if (IS_ERR(conv->lane_clk))
 		return PTR_ERR(conv->lane_clk);
-	}
+
+
 
 	printk("ad9083_request_clks 4\n");
-	conv->sysref_clk = devm_clk_get(&conv->spi->dev, "adc_sysref");
-	if (IS_ERR(conv->sysref_clk)) {
-		if (PTR_ERR(conv->sysref_clk) != -ENOENT)
-			return PTR_ERR(conv->sysref_clk);
-		conv->sysref_clk = NULL;
-		printk("ad9083_request_clks 5\n");
-	} else {
-		ret = clk_prepare_enable(conv->sysref_clk);
-		if (ret < 0)
-			return ret;
-		printk("ad9083_request_clks 6\n");
-	}
-	printk("ad9083_request_clks 7\n");
+	ret = clk_prepare_enable(conv->sysref_clk);
+	if (ret < 0)
+		return ret;
+	
+	printk("ad9083_request_clks 5\n");
+
+
+	// printk("ad9083_request_clks 1\n");
+	// conv->clk = devm_clk_get(&conv->spi->dev, "adc_clk1");
+	// if (IS_ERR(conv->clk) || PTR_ERR(conv->clk) != -ENOENT)
+	// 	return PTR_ERR(conv->clk);
+
+	// if (phy->jdev)
+	// 	return 0;
+	// printk("ad9083_request_clks 2\n");
+	// // conv->lane_clk = devm_clk_get(&conv->spi->dev, "jesd_adc_clk");
+	// // if (IS_ERR(conv->lane_clk) && PTR_ERR(conv->lane_clk) != -ENOENT) {
+	// // 	pr_err("ad9083_request_clks 3: %d",PTR_ERR(conv->lane_clk));
+	// // 	return PTR_ERR(conv->lane_clk);
+	// // }
+
+	// printk("ad9083_request_clks 4\n");
+	// conv->sysref_clk = devm_clk_get(&conv->spi->dev, "adc_sysref1");
+	// if (IS_ERR(conv->sysref_clk)) {
+	// 	if (PTR_ERR(conv->sysref_clk) != -ENOENT)
+	// 		return PTR_ERR(conv->sysref_clk);
+	// 	conv->sysref_clk = NULL;
+	// 	printk("ad9083_request_clks 5\n");
+	// } else {
+	// 	ret = clk_prepare_enable(conv->sysref_clk);
+	// 	if (ret < 0)
+	// 		return ret;
+	// 	printk("ad9083_request_clks 6\n");
+	// }
+	// printk("ad9083_request_clks 7\n");
 	return 0;
 }
 
@@ -505,10 +533,12 @@ static int ad9083_probe(struct spi_device *spi)
 {
 	struct axiadc_converter *conv;
 	struct ad9083_phy *phy;
-	struct iio_dev *indio_dev;
-//	struct ad9083_state *st;
 	struct jesd204_dev *jdev;
+	struct iio_dev *indio_dev;
 	struct ad9083_jesd204_priv *priv;
+//	struct ad9083_state *st;
+	
+	
 	int ret;
 
 	printk("==============================================ad9083 probed===============================================");
