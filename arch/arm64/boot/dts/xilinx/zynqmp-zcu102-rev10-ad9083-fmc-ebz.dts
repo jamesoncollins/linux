@@ -56,7 +56,7 @@
 
 			jesd204-device;
 			#jesd204-cells = <2>;
-			//jesd204-inputs = <&axi_ad9083_rx_jesd 0 FRAMER_LINK0_RX>;
+			jesd204-inputs = <&axi_ad9083_rx_jesd 0 0>;
 		};
 
 		axi_ad9083_rx_jesd: axi-jesd204-rx@0x84AA0000 {
@@ -71,11 +71,12 @@
 			#clock-cells = <0>;
 			clock-output-names = "jesd_rx_lane_clk";
 
-			jesd204-device;
-			#jesd204-cells = <2>;
-			//jesd204-inputs = <&axi_ad9083_adxcvr_rx 0 FRAMER_LINK0_RX>;
 			adi,octets-per-frame = <8>;
 			adi,frames-per-multiframe = <32>;
+
+			jesd204-device;
+			#jesd204-cells = <2>;
+			jesd204-inputs = <&axi_ad9083_adxcvr_rx 0 0>;
 		};
 
 		axi_ad9083_adxcvr_rx: axi-adxcvr-rx@84a60000 {
@@ -94,9 +95,9 @@
 			adi,out-clk-select = <XCVR_REFCLK_DIV2>;
  			adi,use-lpm-enable;
 
-			//jesd204-device;
+			jesd204-device;
 			#jesd204-cells = <2>;
-			//jesd204-inputs =  <&hmc7044 0 FRAMER_LINK0_RX>;
+			jesd204-inputs = <&ad9528 0 0>;
 		};
 
 		axi_sysid_0: axi-sysid-0@85000000 {

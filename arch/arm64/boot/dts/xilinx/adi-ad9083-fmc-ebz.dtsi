@@ -15,6 +15,10 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
+		jesd204-device;
+		#jesd204-cells = <2>;
+		jesd204-sysref-provider;
+
 		spi-max-frequency = <10000000>;
 		adi,spi-3wire-enable;
 
@@ -116,6 +120,13 @@
 		#size-cells = <0>;
 		compatible = "adi,ad9083";
 		reg = <0>;
+		
+		jesd204-device;
+		#jesd204-cells = <2>;
+		jesd204-top-device = <0>;
+		jesd204-link-ids = <0>;
+		jesd204-inputs = <&axi_ad9083_core_rx 0 0>;
+
 		spi-max-frequency = <1000000>;
 		clocks = <&axi_ad9083_rx_jesd>, <&ad9528 12>, <&ad9528 13>;
 		clock-names = "jesd_adc_clk", "adc_sysref", "adc_ref_clk";
