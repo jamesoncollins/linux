@@ -596,6 +596,7 @@ static int jesd204_fsm_handle_con_cb(struct jesd204_dev *jdev_it,
 
 	if (ret < 0) {
 		ol = &jdev_top->active_links[link_idx];
+
 		jesd204_err(jdev_it,
 			    "JESD204[%u] got error from cb: %d\n",
 			    ol->link.link_id, ret);

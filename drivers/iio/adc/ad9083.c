@@ -170,6 +170,7 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
 	struct ad9083_phy *phy = priv->phy;
 	struct jesd204_link *link;
+	printk("ad9083_jesd204_link_init\n");
 
 	switch (reason) {
 	case JESD204_STATE_OP_REASON_INIT:
@@ -182,8 +183,9 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
 	link = &phy->jesd204_link;
-
-	jesd204_copy_link_params(lnk, link);
+	lnk->num_lanes = 4;
+	lnk->link_id = 0;
+	// jesd204_copy_link_params(lnk, link);
 
 	lnk->sample_rate = phy->sampling_frequency_hz;
 	lnk->sample_rate_div = phy->dcm;
@@ -528,7 +530,55 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 
 	return 0;
 }
+enum {
+	ID_AD9083,
 
+};
+
+#define AIM_CHAN(_chan, _mod, _si, _bits, _sign)			\
+	{ .type = IIO_VOLTAGE,						\
+	  .indexed = 1,							\
+	  .modified = 1,						\
+	  .channel = _chan,						\
+	  .channel2 = _mod,						\
+	  .info_mask_separate = BIT(IIO_CHAN_INFO_CALIBSCALE) |		\
+			BIT(IIO_CHAN_INFO_CALIBBIAS) |			\
+			BIT(IIO_CHAN_INFO_CALIBPHASE),			\
+	  .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SAMP_FREQ),	\
+	/*.ext_info = axiadc_ext_info,*/			\
+	  .scan_index = _si,						\
+	  .scan_type = {						\
+		.sign = _sign,						\
+		.realbits = _bits,					\
+		.storagebits = 16,					\
+		.shift = 0,						\
+	  },								\
+	}
+
+static struct axiadc_chip_info axiadc_chip_info_tbl[] = {
+	[ID_AD9083] = {
+		.name = "AD9083",
+		.max_rate = 245760000,
+		.max_testmode = 0,
+		.num_channels = 16,
+		.channel[0] = AIM_CHAN(0, IIO_MOD_I, 0, 16, 'S'),
+		.channel[1] = AIM_CHAN(0, IIO_MOD_Q, 1, 16, 'S'),
+		.channel[2] = AIM_CHAN(1, IIO_MOD_I, 2, 16, 'S'),
+		.channel[3] = AIM_CHAN(1, IIO_MOD_Q, 3, 16, 'S'),
+		.channel[4] = AIM_CHAN(2, IIO_MOD_I, 4, 16, 'S'),
+		.channel[5] = AIM_CHAN(2, IIO_MOD_Q, 5, 16, 'S'),
+		.channel[6] = AIM_CHAN(3, IIO_MOD_I, 6, 16, 'S'),
+		.channel[7] = AIM_CHAN(3, IIO_MOD_Q, 7, 16, 'S'),
+		.channel[8] = AIM_CHAN(4, IIO_MOD_I, 8, 16, 'S'),
+		.channel[9] = AIM_CHAN(4, IIO_MOD_Q, 9, 16, 'S'),
+		.channel[10] = AIM_CHAN(5, IIO_MOD_I, 10, 16, 'S'),
+		.channel[11] = AIM_CHAN(5, IIO_MOD_Q, 11, 16, 'S'),
+		.channel[12] = AIM_CHAN(6, IIO_MOD_I, 12, 16, 'S'),
+		.channel[13] = AIM_CHAN(6, IIO_MOD_Q, 13, 16, 'S'),
+		.channel[14] = AIM_CHAN(7, IIO_MOD_I, 14, 16, 'S'),
+		.channel[15] = AIM_CHAN(7, IIO_MOD_Q, 15, 16, 'S'),
+	},
+};
 static int ad9083_probe(struct spi_device *spi)
 {
 	struct axiadc_converter *conv;
@@ -570,6 +620,7 @@ static int ad9083_probe(struct spi_device *spi)
 	spi_set_drvdata(spi, conv);
 	conv->spi = spi;
 	conv->phy = phy;
+	conv->chip_info = &axiadc_chip_info_tbl[0];
 
 	printk("ad9083_4\n");
 	if (jdev) {
@@ -602,6 +653,13 @@ static int ad9083_probe(struct spi_device *spi)
 	// conv->write_raw = ad9208_write_raw;
 	// conv->read_raw = ad9208_read_raw;
 	printk("ad9083_6\n");
+	ret = jesd204_fsm_start(jdev, JESD204_LINKS_ALL);
+    if (ret < 0) {
+        printk(KERN_INFO"jesd204_fsm_start failed (%d)\n", ret);
+        return ret;
+    }
+	printk("ad9083_7\n");
+
 	return 0;
 }
 
