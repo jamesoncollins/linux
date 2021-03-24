@@ -170,7 +170,7 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
 	struct ad9083_phy *phy = priv->phy;
 	struct jesd204_link *link;
-	printk("ad9083_jesd204_link_init\n");
+	printk("ad9083_jesd204_link_init1\n");
 
 	switch (reason) {
 	case JESD204_STATE_OP_REASON_INIT:
@@ -183,19 +183,31 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
 	link = &phy->jesd204_link;
+
 	lnk->num_lanes = 4;
 	lnk->link_id = 0;
-	// jesd204_copy_link_params(lnk, link);
-
-	lnk->sample_rate = phy->sampling_frequency_hz;
-	lnk->sample_rate_div = phy->dcm;
+	lnk->octets_per_frame = 8;
+	lnk->frames_per_multiframe = 32;
+	lnk->converter_resolution = 16;
+	lnk->bits_per_sample = 16;
+	lnk->num_converters = 16;
+	lnk->sample_rate = 125000000;
+	lnk->subclass = 0;
+	lnk->sample_rate_div = 1;
 	lnk->jesd_encoder = JESD204_ENCODER_8B10B;
 
+
+
+	 //jesd204_copy_link_params(lnk, link);
+
+	
+	
+
 	//if (phy->sysref_mode == AD9208_SYSREF_CONT)
-		lnk->sysref.mode = JESD204_SYSREF_CONTINUOUS;
+		// lnk->sysref.mode = JESD204_SYSREF_CONTINUOUS;
 	//else if (phy->sysref_mode == AD9208_SYSREF_ONESHOT)
 //		lnk->sysref.mode = JESD204_SYSREF_ONESHOT;
-
+	printk("ad9083_jesd204_link_init2\n");
 	return JESD204_STATE_CHANGE_DONE;
 }
 
@@ -205,6 +217,7 @@ static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
 		struct jesd204_link *lnk)
 {
 	int uc = 7;
+	printk("ad9083_jesd204_clks_enable1\n");
 	struct uc_settings *uc_settings = get_uc_settings();
 	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	struct device *dev = jesd204_dev_to_device(jdev);
@@ -220,7 +233,7 @@ static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
 		dev_err(dev, "Failed to enabled JESD204 link (%d)\n", ret);
 		return ret;
 	}
-
+printk("ad9083_jesd204_clks_enable2\n");
 	return JESD204_STATE_CHANGE_DONE;
 }
 
@@ -228,11 +241,12 @@ static int ad9083_jesd204_link_enable(struct jesd204_dev *jdev,
 		enum jesd204_state_op_reason reason,
 		struct jesd204_link *lnk)
 {
+	printk("ad9083_jesd204_link_enable1\n");
 	struct device *dev = jesd204_dev_to_device(jdev);
 
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
 		 __LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
-
+	printk("ad9083_jesd204_link_enable2\n");
 	return JESD204_STATE_CHANGE_DONE;
 }
 
