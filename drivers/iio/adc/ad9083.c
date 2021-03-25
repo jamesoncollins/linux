@@ -195,6 +195,7 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	lnk->subclass = 0;
 	lnk->sample_rate_div = 1;
 	lnk->jesd_encoder = JESD204_ENCODER_8B10B;
+	lnk->jesd_version = JESD204_VERSION_B;
 
 
 
@@ -228,7 +229,6 @@ static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
-	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, jtx_param);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enabled JESD204 link (%d)\n", ret);
 		return ret;
@@ -399,6 +399,7 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, jtx_param);
 	if (ret < 0)
 		return ret;
+
 	printk("ad9083 ad9083_setup OK!!!\n");
 	return 0;
 }

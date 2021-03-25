@@ -31,6 +31,15 @@
 };
 
 / {
+	clocks {
+		rx_fixed_link_clk: clock@1 {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <250000000>;
+			clock-output-names = "rx_link_clk";
+		};
+	};
+
 	fpga_axi: fpga-axi@0 {
 		interrupt-parent = <&gic>;
 		compatible = "simple-bus";
@@ -65,8 +74,8 @@
 
 			interrupts = <0 107 IRQ_TYPE_LEVEL_HIGH>;
 
-			clocks = <&zynqmp_clk 71>, <&ad9528 1>, <&axi_ad9083_adxcvr_rx 0>;
-			clock-names = "s_axi_aclk", "device_clk", "lane_clk";
+			clocks = <&zynqmp_clk 71>, <&ad9528 1>, <&axi_ad9083_adxcvr_rx 0>, <&rx_fixed_link_clk>;
+			clock-names = "s_axi_aclk", "device_clk", "lane_clk", "link_clk";
 
 			#clock-cells = <0>;
 			clock-output-names = "jesd_rx_lane_clk";
