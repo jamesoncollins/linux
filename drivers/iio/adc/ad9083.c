@@ -40,9 +40,9 @@ struct ad9083_jesd204_priv {
 
 struct ad9083_phy {
 	adi_ad9083_device_t	adi_ad9083;
-	struct axiadc_chip_info chip_info;
-	struct jesd204_dev *jdev;
-	struct jesd204_link jesd204_link;
+	struct axiadc_chip_info	chip_info;
+	struct jesd204_dev	*jdev;
+	struct jesd204_link	jesd204_link;
 	u32 dcm;
 	u64 sampling_frequency_hz;
 	u32 uc;
@@ -133,7 +133,7 @@ int ad9083_register_write(adi_ad9083_device_t *h,
 	uint8_t outData[IN_OUT_BUFF_SZ];
 
 	if (address < MAX_REG_ADDR) {
-		inData[0] = address >> 8;
+		inData[0] = (address >> 8) | 0x80;
 		inData[1] = address;
 		ret = h->hal_info.spi_xfer(h->hal_info.user_data, inData, outData, IN_OUT_BUFF_SZ);
 		if (ret == 0)
@@ -151,11 +151,9 @@ static int ad9083_reg_access(struct iio_dev *indio_dev, unsigned int reg,
 	int ret;
 	u8 val;
 
-	printk(KERN_INFO"uc: %d", phy->uc);
 	if (readval == NULL)
-
 		return ad9083_register_write(&phy->adi_ad9083, reg, writeval);
-
+	
 	ret = ad9083_register_read(&phy->adi_ad9083, reg, &val);
 	if (ret < 0)
 		return ret;
@@ -391,7 +389,6 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	int32_t ret;
 
-
 	printk(KERN_INFO"ad9083 ad9083_setup spi->dev.init_name=%s\n", spi->dev.driver->name);
 	ret = ad9083_request_clks(conv);
 	if (ret)
@@ -408,8 +405,8 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 		printk("ad9083 adi_ad9083_device_chip_id_get error 1\n");
 		return -ENOENT;
 	}
-	printk("ad9083 adi_ad9083_device_chip_id_get OK!!!\n");
 
+	printk("ad9083 adi_ad9083_device_chip_id_get OK!!!\n");
 
 	/* software reset, resistor is not mounted */
 	ret = adi_ad9083_device_reset(&phy->adi_ad9083, AD9083_SOFT_RESET);
@@ -634,6 +631,14 @@ static struct axiadc_chip_info axiadc_chip_info_tbl[] = {
 	},
 };
 
+
+static const struct iio_info ad9083_iio_info = {
+	.read_raw = &ad9083_read_raw,
+	.write_raw = &ad9083_write_raw,
+	.debugfs_reg_access = &ad9083_reg_access,
+	// .attrs = &ad9083_phy_attribute_group,
+};
+
 static int ad9083_register_iiodev(struct axiadc_converter *conv)
 {
 	struct iio_dev *indio_dev;
@@ -654,7 +659,7 @@ static int ad9083_register_iiodev(struct axiadc_converter *conv)
 	else
 		indio_dev->name = spi_get_device_id(spi)->name;
 
-	// indio_dev->info = &ad9083_iio_info;
+	indio_dev->info = &ad9083_iio_info;
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	// indio_dev->channels = phy->chip_info.channel;
 	// indio_dev->num_channels = phy->chip_info.num_channels;
@@ -733,13 +738,19 @@ static int ad9083_probe(struct spi_device *spi)
 
 	ret = ad9083_setup(spi, phy->uc);
 	if (ret < 0) {
-		dev_err(&spi->dev, "init failed (%d)\n", ret);
+		dev_err(&spi->dev, "ad9083_setup failed(%d)\n", ret);
 	 	return -ENODEV;
 	}
 
 	conv->reg_access = ad9083_reg_access;
 	conv->write_raw = ad9083_write_raw;
 	conv->read_raw = ad9083_read_raw;
+
+	ret = ad9083_register_iiodev(conv);
+	if (ret < 0) {
+		dev_err(&spi->dev, "ad9083_register_iiodev failed (%d)\n", ret);
+	 	return -ENODEV;
+	}
 
 	printk("ad9083_6\n");
 	ret = jesd204_fsm_start(jdev, JESD204_LINKS_ALL);
