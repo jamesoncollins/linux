@@ -151,7 +151,9 @@ static int ad9083_reg_access(struct iio_dev *indio_dev, unsigned int reg,
 	int ret;
 	u8 val;
 
+	printk(KERN_INFO"uc: %d", phy->uc);
 	if (readval == NULL)
+
 		return ad9083_register_write(&phy->adi_ad9083, reg, writeval);
 
 	ret = ad9083_register_read(&phy->adi_ad9083, reg, &val);
@@ -160,6 +162,46 @@ static int ad9083_reg_access(struct iio_dev *indio_dev, unsigned int reg,
 	*readval = val;
 
 	return 0;
+}
+
+static int ad9083_read_raw(struct iio_dev *indio_dev,
+			   struct iio_chan_spec const *chan,
+			   int *val,
+			   int *val2,
+			   long m)
+{
+	switch (m) {
+	case IIO_CHAN_INFO_RAW:
+		*val = 1;
+
+		return IIO_VAL_INT;
+	case IIO_CHAN_INFO_OFFSET:
+		*val = 2;
+
+		return IIO_VAL_INT;
+	case IIO_CHAN_INFO_SCALE:
+		*val = 3;
+
+		return IIO_VAL_INT;
+	default:
+		return -EINVAL;
+	}
+}
+
+static int ad9083_write_raw(struct iio_dev *indio_dev,
+			    struct iio_chan_spec const *chan,
+			    int val,
+			    int val2,
+			    long info)
+{
+	switch (info) {
+	case IIO_CHAN_INFO_RAW:
+	{
+		return 0;
+	}
+	default:
+		return -EINVAL;
+	}
 }
 
 static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
@@ -217,22 +259,20 @@ static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
 		enum jesd204_state_op_reason reason,
 		struct jesd204_link *lnk)
 {
-	int uc = 7;
-	printk("ad9083_jesd204_clks_enable1\n");
-	struct uc_settings *uc_settings = get_uc_settings();
-	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
+	// int uc = 7;
+	// struct uc_settings *uc_settings = get_uc_settings();
+	// adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	struct device *dev = jesd204_dev_to_device(jdev);
-	struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
-	struct ad9083_phy *phy = priv->phy;
-	int ret;
+	// struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
+	// int ret;
 
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
-	if (ret < 0) {
-		dev_err(dev, "Failed to enabled JESD204 link (%d)\n", ret);
-		return ret;
-	}
+	// if (ret < 0) {
+	// 	dev_err(dev, "Failed to enabled JESD204 link (%d)\n", ret);
+	// 	return ret;
+	// }
 printk("ad9083_jesd204_clks_enable2\n");
 	return JESD204_STATE_CHANGE_DONE;
 }
@@ -241,7 +281,6 @@ static int ad9083_jesd204_link_enable(struct jesd204_dev *jdev,
 		enum jesd204_state_op_reason reason,
 		struct jesd204_link *lnk)
 {
-	printk("ad9083_jesd204_link_enable1\n");
 	struct device *dev = jesd204_dev_to_device(jdev);
 
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
@@ -407,9 +446,9 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
-	struct device_node *chan_np;
-	u32 tmp, reg;
-	int ret;
+	// struct device_node *chan_np;
+	u32 tmp;//, reg;
+	// int ret;
 
 	of_property_read_u32(np, "adi,uc", &tmp);
 	phy->uc = tmp;
@@ -594,12 +633,46 @@ static struct axiadc_chip_info axiadc_chip_info_tbl[] = {
 		.channel[15] = AIM_CHAN(7, IIO_MOD_Q, 15, 16, 'S'),
 	},
 };
+
+static int ad9083_register_iiodev(struct axiadc_converter *conv)
+{
+	struct iio_dev *indio_dev;
+	struct spi_device *spi = conv->spi;
+	struct ad9081_phy *phy = conv->phy;
+	int ret;
+
+	indio_dev = devm_iio_device_alloc(&spi->dev, 0);
+	if (!indio_dev)
+		return -ENOMEM;
+
+	iio_device_set_drvdata(indio_dev, conv);
+
+	indio_dev->dev.parent = &spi->dev;
+
+	if (spi->dev.of_node)
+		indio_dev->name = spi->dev.of_node->name;
+	else
+		indio_dev->name = spi_get_device_id(spi)->name;
+
+	// indio_dev->info = &ad9083_iio_info;
+	indio_dev->modes = INDIO_DIRECT_MODE;
+	// indio_dev->channels = phy->chip_info.channel;
+	// indio_dev->num_channels = phy->chip_info.num_channels;
+
+	ret = iio_device_register(indio_dev);
+	//ad9081_post_iio_register(indio_dev);
+
+	conv->indio_dev = indio_dev;
+
+	return ret;
+}
+
 static int ad9083_probe(struct spi_device *spi)
 {
 	struct axiadc_converter *conv;
 	struct ad9083_phy *phy;
 	struct jesd204_dev *jdev;
-	struct iio_dev *indio_dev;
+	// struct iio_dev *indio_dev;
 	struct ad9083_jesd204_priv *priv;
 //	struct ad9083_state *st;
 	
@@ -665,8 +738,9 @@ static int ad9083_probe(struct spi_device *spi)
 	}
 
 	conv->reg_access = ad9083_reg_access;
-	// conv->write_raw = ad9208_write_raw;
-	// conv->read_raw = ad9208_read_raw;
+	conv->write_raw = ad9083_write_raw;
+	conv->read_raw = ad9083_read_raw;
+
 	printk("ad9083_6\n");
 	ret = jesd204_fsm_start(jdev, JESD204_LINKS_ALL);
     if (ret < 0) {
