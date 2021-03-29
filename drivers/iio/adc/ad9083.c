@@ -228,7 +228,7 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 
 
 
-	 
+
 	// lnk->num_lanes = 4;
 	// lnk->link_id = 0;
 	// lnk->octets_per_frame = 8;
@@ -452,8 +452,11 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	if (ret < 0)
 		return ret;
 
-	ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083, clk_hz[2],
-			clk_hz[0]);
+	// ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083, clk_hz[2],
+	// 		clk_hz[0]);
+	ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083,
+			phy->sampling_frequency_hz * phy->jesd204_link.num_converters,
+			clk_get_rate(conv->clk));
 	if (ret < 0)
 		return ret;
 
@@ -488,18 +491,6 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	of_property_read_u64(np, "adi,sampling-frequency",
 			     &phy->sampling_frequency_hz);
 
-	// lnk->num_lanes = 4;
-	// lnk->link_id = 0;
-	// lnk->octets_per_frame = 8;
-	// lnk->frames_per_multiframe = 32;
-	// lnk->converter_resolution = 16;
-	// lnk->bits_per_sample = 16;
-	// lnk->num_converters = 16;
-	// lnk->sample_rate = 125000000;
-	// lnk->subclass = 1;
-	// lnk->sample_rate_div = 1;
-	// lnk->jesd_encoder = JESD204_ENCODER_8B10B;
-	// lnk->jesd_version = JESD204_VERSION_B;
 
 	// /* JESD Link Config */
 

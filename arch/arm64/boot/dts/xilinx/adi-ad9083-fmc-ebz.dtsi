@@ -83,7 +83,7 @@
 			adi,extended-name = "FPGA_GLBL_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <8>;
+			adi,channel-divider = <8>; /* 125 MHz */
 			adi,signal-source = <SOURCE_VCO>;
 		};
 
@@ -92,7 +92,7 @@
 			adi,extended-name = "FPGA_REF_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <2>;
+			adi,channel-divider = <2>; /* 500 MHz */
 			adi,signal-source = <SOURCE_VCO>;
 		};
 
@@ -101,7 +101,7 @@
 			adi,extended-name = "ADC_SYSREF_CLK"; 
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <5>; /* only sysref-k-div when FPGA_SYSREF_CLK */
+			adi,channel-divider = <1>; /* only sysref-k-div when FPGA_SYSREF_CLK */
 			adi,signal-source = <SOURCE_SYSREF_VCO>;
 		};
 
@@ -110,7 +110,7 @@
 			adi,extended-name = "ADC_REF_CLK";
 			adi,driver-mode = <DRIVER_MODE_LVDS>;
 			adi,divider-phase = <0>;
-			adi,channel-divider = <4>;
+			adi,channel-divider = <4>; /* 250 MHz */
 			adi,signal-source = <SOURCE_VCO>;
 		};
 	};
