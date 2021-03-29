@@ -45,9 +45,21 @@ struct ad9083_phy {
 	struct jesd204_dev	*jdev;
 	struct jesd204_link	jesd204_link;
 	adi_cms_jesd_param_t 	jesd_param;
+	
+	u32 vmax;
+	u64 fc;
+	u32 rterm;
+	u32 en_hp;
+	u32 backoff;
+	u64 finmax;
+	
+	
 	u32 dcm;
 	u64 sampling_frequency_hz;
 	u32 uc;
+
+
+
 };
 
 static int ad9083_udelay(void *user_data, unsigned int us)
@@ -452,16 +464,14 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	if (ret < 0)
 		return ret;
 
-	// ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083, clk_hz[2],
-	// 		clk_hz[0]);
 	ret = adi_ad9083_device_clock_config_set(&phy->adi_ad9083,
 			phy->sampling_frequency_hz * phy->jesd204_link.num_converters,
 			clk_get_rate(conv->clk));
 	if (ret < 0)
 		return ret;
 
-	ret = adi_ad9083_rx_adc_config_set(&phy->adi_ad9083, vmax, fc,
-					   rterm, en_hp, backoff, finmax);
+	ret = adi_ad9083_rx_adc_config_set(&phy->adi_ad9083, phy->vmax, phy->fc,
+					   phy->rterm, phy->en_hp, phy->backoff, phy->finmax);
 	if (ret < 0)
 		return ret;
 
@@ -491,8 +501,15 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	of_property_read_u64(np, "adi,sampling-frequency",
 			     &phy->sampling_frequency_hz);
 
+	/* adi_ad9083_rx_adc_config */
+	of_property_read_u32(np, "adi,vmax", &phy->vmax);
+	of_property_read_u64(np, "adi,fc", &phy->fc);
+	of_property_read_u32(np, "adi,rterm", &phy->rterm);
+	of_property_read_u32(np, "adi,en_hp", &phy->en_hp);
+	of_property_read_u32(np, "adi,backoff", &phy->backoff);
+	of_property_read_u64(np, "adi,finmax", &phy->finmax);
 
-	// /* JESD Link Config */
+	/* JESD Link Config */
 
 	JESD204_LNK_READ_NUM_LANES(dev, np, &phy->jesd204_link,
 				   &phy->jesd_param.jesd_l, 4);

@@ -5,6 +5,7 @@
  * Copyright (C) 2018-2019 Analog Devices Inc.
  */
 #include <dt-bindings/iio/frequency/ad9528.h>
+#include <dt-bindings/iio/adc/adi,ad9083.h>
 
 &fmc_spi {
 	ad9528: ad9528@1 {
@@ -132,6 +133,21 @@
 		clock-names = "jesd_adc_clk", "adc_sysref", "adc_ref_clk";
 
 		adi,sampling-frequency = /bits/ 64 <125000000>;
+
+		/* adi_ad9083_rx_adc_config */
+
+		adi,vmax = <1800>;
+		adi,fc =  /bits/ 64 <800000000>;
+		adi,rterm = <AD9083_ADC_TERM_RES_100>;
+		adi,en_hp = <0>;
+		adi,backoff = <0>;
+		adi,finmax = /bits/ 64 <100000000>;
+		
+		/* adi_ad9083_rx_datapath_config_set */
+
+		/* adi_ad9083_jtx_startup */
+
+		/* JESD204 parameters */
 
 		adi,octets-per-frame = <8>;
 		adi,frames-per-multiframe = <32>;
