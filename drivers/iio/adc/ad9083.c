@@ -24,6 +24,7 @@
 
 #include "cf_axi_adc.h"
 #include <linux/jesd204/jesd204.h>
+#include <linux/jesd204/jesd204-of.h>
 
 #include "ad9083/adi_ad9083.h"
 #include "ad9083/uc_settings.h"
@@ -43,6 +44,7 @@ struct ad9083_phy {
 	struct axiadc_chip_info	chip_info;
 	struct jesd204_dev	*jdev;
 	struct jesd204_link	jesd204_link;
+	adi_cms_jesd_param_t 	jesd_param;
 	u32 dcm;
 	u64 sampling_frequency_hz;
 	u32 uc;
@@ -222,27 +224,60 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
-	link = &phy->jesd204_link;
+	 link = &phy->jesd204_link;
 
-	lnk->num_lanes = 4;
-	lnk->link_id = 0;
-	lnk->octets_per_frame = 8;
-	lnk->frames_per_multiframe = 32;
-	lnk->converter_resolution = 16;
-	lnk->bits_per_sample = 16;
-	lnk->num_converters = 16;
-	lnk->sample_rate = 125000000;
-	lnk->subclass = 0;
-	lnk->sample_rate_div = 1;
+
+
+	 
+	// lnk->num_lanes = 4;
+	// lnk->link_id = 0;
+	// lnk->octets_per_frame = 8;
+	// lnk->frames_per_multiframe = 32;
+	// lnk->converter_resolution = 16;
+	// lnk->bits_per_sample = 16;
+	// lnk->num_converters = 16;
+	// lnk->sample_rate = 125000000;
+	// lnk->subclass = 0;
+	// lnk->sample_rate_div = 1;
+	// lnk->jesd_encoder = JESD204_ENCODER_8B10B;
+	// lnk->jesd_version = JESD204_VERSION_B;
+
+	
+
+	jesd204_copy_link_params(lnk, link);
+	
 	lnk->jesd_encoder = JESD204_ENCODER_8B10B;
-	lnk->jesd_version = JESD204_VERSION_B;
+	lnk->sample_rate = phy->sampling_frequency_hz;
+	lnk->sample_rate_div = 1;
+	lnk->link_id = 0;
+
+	printk(KERN_INFO"ad9083_jesd204_link_init \n"
+	"num_lanes:%d \n," 
+	"link_id:%d \n," 
+	"octets_per_frame:%d \n, "
+	"frames_per_multiframe:%d \n, "
+	"converter_resolution:%d \n, "
+	"bits_per_sample:%d \n, "
+	"num_converters:%d \n, "
+	"sample_rate:%lld \n, "
+	"subclass:%d \n, "
+	"sample_rate_div:%d \n, "
+	"jesd_encoder:%d \n, "
+	"jesd_version:%d \n, ",
+	lnk->num_lanes,
+	lnk->link_id,
+	lnk->octets_per_frame,
+	lnk->frames_per_multiframe,
+	lnk->converter_resolution,
+	lnk->bits_per_sample,
+	lnk->num_converters,
+	lnk->sample_rate,
+	lnk->subclass,
+	lnk->sample_rate_div,
+	lnk->jesd_encoder,
+	lnk->jesd_version);
 
 
-
-	 //jesd204_copy_link_params(lnk, link);
-
-	
-	
 
 	//if (phy->sysref_mode == AD9208_SYSREF_CONT)
 		// lnk->sysref.mode = JESD204_SYSREF_CONTINUOUS;
@@ -449,138 +484,49 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 
 	of_property_read_u32(np, "adi,uc", &tmp);
 	phy->uc = tmp;
-	printk(KERN_INFO"ad9083 uc=%d\n", tmp);
-	/* Pin Config */
 
-	// phy->powerdown_pin_en = of_property_read_bool(np,
-	// 				"adi,powerdown-pin-enable");
+	of_property_read_u64(np, "adi,sampling-frequency",
+			     &phy->sampling_frequency_hz);
 
-	// tmp = AD9208_POWERUP;
-	// of_property_read_u32(np, "adi,powerdown-mode", &tmp);
-	// phy->powerdown_mode = tmp;
-
-	// /* Clock Config */
-
-	// of_property_read_u64(np, "adi,sampling-frequency",
-	// 		     &phy->sampling_frequency_hz);
-
-	// tmp = 1;
-	// of_property_read_u32(np, "adi,input-clock-divider-ratio", &tmp);
-	// phy->input_div = tmp;
-
-	// phy->duty_cycle_stabilizer_en = of_property_read_bool(np,
-	// 				"adi,duty-cycle-stabilizer-enable");
-
-	// /* Analog Conifg */
-
-	// phy->analog_input_mode = of_property_read_bool(np,
-	// 				"adi,analog-input-dc-coupling-enable");
-
-	// phy->ext_vref_en  = of_property_read_bool(np,
-	// 				"adi,external-vref-enable");
-
-	// tmp = AD9208_ADC_BUFF_CURR_500_UA;
-	// of_property_read_u32(np, "adi,analog-input-neg-buffer-current", &tmp);
-	// phy->buff_curr_n = tmp;
-
-	// tmp = AD9208_ADC_BUFF_CURR_500_UA;
-	// of_property_read_u32(np, "adi,analog-input-pos-buffer-current", &tmp);
-	// phy->buff_curr_p = tmp;
-
-	// /* SYSREF Config */
-
-	// tmp = 0;
-	// of_property_read_u32(np, "adi,sysref-lmfc-offset", &tmp);
-	// phy->sysref_lmfc_offset = tmp;
-
-	// phy->sysref_edge_sel = of_property_read_bool(np,
-	// 				"adi,sysref-edge-high-low-enable");
-	// phy->sysref_clk_edge_sel  = of_property_read_bool(np,
-	// 				"adi,sysref-clk-edge-falling-enable");
-
-	// tmp = 0;
-	// of_property_read_u32(np, "adi,sysref-neg-window-skew", &tmp);
-	// phy->sysref_neg_window_skew = tmp;
-
-	// tmp = 0;
-	// of_property_read_u32(np, "adi,sysref-pos-window-skew", &tmp);
-	// phy->sysref_pos_window_skew = tmp;
-
-	// tmp = AD9208_SYSREF_CONT;
-	// of_property_read_u32(np, "adi,sysref-mode", &tmp);
-	// phy->sysref_mode = tmp;
-
-	// tmp = 0;
-	// of_property_read_u32(np,  "adi,sysref-nshot-ignore-count", &tmp);
-	// phy->sysref_count = tmp;
-
-	// /* DDC Config */
-
-	// tmp = AD9208_FULL_BANDWIDTH_MODE;
-	// of_property_read_u32(np, "adi,ddc-channel-number", &tmp);
-	// phy->fc_ch = tmp;
-
-	// phy->ddc_output_format_real_en = of_property_read_bool(np,
-	// 				"adi,ddc-complex-to-real-enable");
-	// phy->ddc_input_format_real_en = of_property_read_bool(np,
-	// 				"adi,ddc-mixer-real-enable");
-
-	// for_each_child_of_node(np, chan_np) {
-	// 	ret = of_property_read_u32(chan_np, "reg", &reg);
-	// 	if (!ret && (reg < ARRAY_SIZE(phy->ddc))) {
-	// 		ret = of_property_read_u32(chan_np, "adi,decimation",
-	// 					   &phy->ddc[reg].decimation);
-	// 		if (ret)
-	// 			return ret;
-	// 		ret = of_property_read_u32(chan_np,
-	// 					"adi,nco-mode-select",
-	// 					&phy->ddc[reg].nco_mode);
-	// 		if (ret)
-	// 			return ret;
-
-	// 		of_property_read_u64(chan_np,
-	// 			"adi,nco-channel-carrier-frequency-hz",
-	// 			&phy->ddc[reg].carrier_freq_hz);
-	// 		of_property_read_u64(chan_np,
-	// 			"adi,nco-channel-phase-offset",
-	// 			&phy->ddc[reg].po);
-	// 		phy->ddc[reg].gain_db = of_property_read_bool(chan_np,
-	// 			"adi,ddc-gain-6dB-enable");
-	// 		phy->ddc_cnt++;
-	// 	}
-	// }
+	// lnk->num_lanes = 4;
+	// lnk->link_id = 0;
+	// lnk->octets_per_frame = 8;
+	// lnk->frames_per_multiframe = 32;
+	// lnk->converter_resolution = 16;
+	// lnk->bits_per_sample = 16;
+	// lnk->num_converters = 16;
+	// lnk->sample_rate = 125000000;
+	// lnk->subclass = 1;
+	// lnk->sample_rate_div = 1;
+	// lnk->jesd_encoder = JESD204_ENCODER_8B10B;
+	// lnk->jesd_version = JESD204_VERSION_B;
 
 	// /* JESD Link Config */
 
-	// JESD204_LNK_READ_OCTETS_PER_FRAME(dev, np, &phy->jesd204_link,
-	// 				  &phy->jesd_param.jesd_F, 1);
+	JESD204_LNK_READ_NUM_LANES(dev, np, &phy->jesd204_link,
+				   &phy->jesd_param.jesd_l, 4);
 
-	// JESD204_LNK_READ_FRAMES_PER_MULTIFRAME(dev, np, &phy->jesd204_link,
-	// 				       &phy->jesd_param.jesd_K , 32);
+	JESD204_LNK_READ_OCTETS_PER_FRAME(dev, np, &phy->jesd204_link,
+	 				  &phy->jesd_param.jesd_f, 8);
 
-	// JESD204_LNK_READ_HIGH_DENSITY(dev, np, &phy->jesd204_link,
-	// 			      &phy->jesd_param.jesd_HD, 0);
+	JESD204_LNK_READ_FRAMES_PER_MULTIFRAME(dev, np, &phy->jesd204_link,
+	 				       &phy->jesd_param.jesd_k , 32);
 
-	// JESD204_LNK_READ_CONVERTER_RESOLUTION(dev, np, &phy->jesd204_link,
-	// 				      &phy->jesd_param.jesd_N, 16);
+	JESD204_LNK_READ_CONVERTER_RESOLUTION(dev, np, &phy->jesd204_link,
+					      &phy->jesd_param.jesd_n, 16);						
 
-	// JESD204_LNK_READ_BITS_PER_SAMPLE(dev, np, &phy->jesd204_link,
-	// 				 &phy->jesd_param.jesd_NP, 16);
+	JESD204_LNK_READ_BITS_PER_SAMPLE(dev, np, &phy->jesd204_link,
+					 &phy->jesd_param.jesd_np, 16);
 
-	// JESD204_LNK_READ_NUM_CONVERTERS(dev, np, &phy->jesd204_link,
-	// 				&phy->jesd_param.jesd_M, 2);
+	JESD204_LNK_READ_NUM_CONVERTERS(dev, np, &phy->jesd204_link,
+					&phy->jesd_param.jesd_m, 16);
 
-	// JESD204_LNK_READ_CTRL_BITS_PER_SAMPLE(dev, np, &phy->jesd204_link,
-	// 				      &phy->jesd_param.jesd_CS, 0);
-
-	// JESD204_LNK_READ_NUM_LANES(dev, np, &phy->jesd204_link,
-	// 			   &phy->jesd_param.jesd_L , 8);
-
-	// JESD204_LNK_READ_SUBCLASS(dev, np, &phy->jesd204_link,
-	// 			  &phy->jesd_subclass, JESD_SUBCLASS_0);
+	JESD204_LNK_READ_SUBCLASS(dev, np, &phy->jesd204_link,
+				  &phy->jesd_param.jesd_subclass, JESD_SUBCLASS_0);
 
 	return 0;
 }
+
 enum {
 	ID_AD9083,
 
