@@ -57,8 +57,7 @@ obj-$(CONFIG_AD9083) += ad9083.o \
 	ad9083/adi_ad9083_device.o \
 	ad9083/adi_ad9083_hal.o \
 	ad9083/adi_ad9083_jesd.o \
-	ad9083/adi_ad9083_rx.o \
-	ad9083/uc_settings.o
+	ad9083/adi_ad9083_rx.o
 
 ad9361_drv-y := ad9361.o ad9361_conv.o
 ad9361_drv-$(CONFIG_AD9361_EXT_BAND_CONTROL) += ad9361_ext_band_ctrl.o

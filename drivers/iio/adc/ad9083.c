@@ -27,8 +27,6 @@
 #include <linux/jesd204/jesd204-of.h>
 
 #include "ad9083/adi_ad9083.h"
-#include "ad9083/uc_settings.h"
-// #include <dt-bindings/iio/adc/adi,ad9083.h>
 
 #define IN_OUT_BUFF_SZ 3
 #define MAX_REG_ADDR		0x1000
@@ -308,9 +306,6 @@ static int ad9083_jesd204_clks_enable(struct jesd204_dev *jdev,
 		enum jesd204_state_op_reason reason,
 		struct jesd204_link *lnk)
 {
-	// int uc = 7;
-	// struct uc_settings *uc_settings = get_uc_settings();
-	// adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	struct device *dev = jesd204_dev_to_device(jdev);
 	// struct ad9083_jesd204_priv *priv = jesd204_dev_priv(jdev);
 	// int ret;
@@ -421,23 +416,11 @@ static int ad9083_request_clks(struct axiadc_converter *conv)
 	return 0;
 }
 
-static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
+static int32_t ad9083_setup(struct spi_device *spi)
 {
 	struct axiadc_converter *conv = spi_get_drvdata(spi);
 	struct ad9083_phy *phy = conv->phy;
 	adi_cms_chip_id_t chip_id;
-	struct uc_settings *uc_settings = get_uc_settings();
-	// uint64_t *clk_hz = uc_settings->clk_hz[uc];
-	// uint32_t vmax = uc_settings->vmax[uc];
-	// uint32_t fc = uc_settings->fc[uc];
-	// uint8_t rterm = uc_settings->rterm[uc];
-	// uint32_t en_hp = uc_settings->en_hp[uc];
-	// uint32_t backoff = uc_settings->backoff[uc];
-	// uint32_t finmax = uc_settings->finmax[uc];
-	// uint64_t *nco_freq_hz = uc_settings->nco_freq_hz[uc];
-	// uint8_t *decimation = uc_settings->decimation[uc];
-	// uint8_t nco0_datapath_mode = uc_settings->nco0_datapath_mode[uc];
-	// adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	adi_cms_jesd_param_t jtx_param;
 	int32_t ret;
 
@@ -445,8 +428,6 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	ret = ad9083_request_clks(conv);
 	if (ret)
 		return ret;
-
-	printk(KERN_INFO"ad9083 ad9083_setup uc=%d\n", uc);
 
 	ret = adi_ad9083_device_chip_id_get(&phy->adi_ad9083, &chip_id);
 	if (ret < 0) {
@@ -514,11 +495,7 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 	// struct device_node *chan_np;
-	u32 tmp;//, reg;
 	// int ret;
-
-	of_property_read_u32(np, "adi,uc", &tmp);
-	phy->uc = tmp;
 
 	of_property_read_u64(np, "adi,sampling-frequency",
 			     &phy->sampling_frequency_hz);
@@ -645,7 +622,7 @@ static int ad9083_register_iiodev(struct axiadc_converter *conv)
 {
 	struct iio_dev *indio_dev;
 	struct spi_device *spi = conv->spi;
-	struct ad9081_phy *phy = conv->phy;
+	// struct ad9081_phy *phy = conv->phy;
 	int ret;
 
 	indio_dev = devm_iio_device_alloc(&spi->dev, 0);
@@ -738,7 +715,7 @@ static int ad9083_probe(struct spi_device *spi)
 		return -ENODEV;
 	}
 
-	ret = ad9083_setup(spi, phy->uc);
+	ret = ad9083_setup(spi);
 	if (ret < 0) {
 		dev_err(&spi->dev, "ad9083_setup failed(%d)\n", ret);
 	 	return -ENODEV;
