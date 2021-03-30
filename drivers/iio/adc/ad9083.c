@@ -437,7 +437,8 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	// uint64_t *nco_freq_hz = uc_settings->nco_freq_hz[uc];
 	// uint8_t *decimation = uc_settings->decimation[uc];
 	// uint8_t nco0_datapath_mode = uc_settings->nco0_datapath_mode[uc];
-	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
+	// adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
+	adi_cms_jesd_param_t jtx_param;
 	int32_t ret;
 
 	printk(KERN_INFO"ad9083 ad9083_setup spi->dev.init_name=%s\n", spi->dev.driver->name);
@@ -484,7 +485,24 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	if (ret < 0)
 		return ret;
 
-	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, jtx_param);
+	jtx_param.jesd_l = phy->jesd_param.jesd_l;                             /*!< No of lanes */
+	jtx_param.jesd_f = phy->jesd_param.jesd_f;                             /*!< No of octets in a frame */
+	jtx_param.jesd_m = phy->jesd_param.jesd_m;                             /*!< No of converters */
+	jtx_param.jesd_s = phy->jesd_param.jesd_s;                             /*!< No of samples */
+	jtx_param.jesd_hd = phy->jesd_param.jesd_hd;                            /*!< High Density */
+	jtx_param.jesd_k = phy->jesd_param.jesd_k;                            /*!< No of frames for a multi-frame */
+	jtx_param.jesd_n = phy->jesd_param.jesd_n;                             /*!< Converter resolution */
+	jtx_param.jesd_np = phy->jesd_param.jesd_np;                            /*!< Bit packing sample */
+	jtx_param.jesd_cf = phy->jesd_param.jesd_cf;                            /*!< Parameter CF */
+	jtx_param.jesd_cs = phy->jesd_param.jesd_cs;                            /*!< Parameter CS */
+	// jtx_param.jesd_did;                           /*!< Device ID DID */
+	// jtx_param.jesd_bid;                           /*!< Bank ID.  BID */
+	// jtx_param.jesd_lid0;                          /*!< Lane ID for lane0 */
+	jtx_param.jesd_subclass = phy->jesd_param.jesd_subclass;                      /*!< Subclass */
+	jtx_param.jesd_scr = phy->jesd_param.jesd_scr;                           /*!< Scramble enable */
+
+
+	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, &jtx_param);
 	if (ret < 0)
 		return ret;
 
