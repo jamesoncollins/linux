@@ -28,6 +28,7 @@
 
 #include "ad9083/adi_ad9083.h"
 #include "ad9083/uc_settings.h"
+// #include <dt-bindings/iio/adc/adi,ad9083.h>
 
 #define IN_OUT_BUFF_SZ 3
 #define MAX_REG_ADDR		0x1000
@@ -52,7 +53,10 @@ struct ad9083_phy {
 	u32 en_hp;
 	u32 backoff;
 	u64 finmax;
-	
+
+	u64 nco_freq_hz[3];
+	u8 decimation[4];
+	u8 nco0_datapath_mode;
 	
 	u32 dcm;
 	u64 sampling_frequency_hz;
@@ -423,16 +427,16 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 	struct ad9083_phy *phy = conv->phy;
 	adi_cms_chip_id_t chip_id;
 	struct uc_settings *uc_settings = get_uc_settings();
-	uint64_t *clk_hz = uc_settings->clk_hz[uc];
-	uint32_t vmax = uc_settings->vmax[uc];
-	uint32_t fc = uc_settings->fc[uc];
-	uint8_t rterm = uc_settings->rterm[uc];
-	uint32_t en_hp = uc_settings->en_hp[uc];
-	uint32_t backoff = uc_settings->backoff[uc];
-	uint32_t finmax = uc_settings->finmax[uc];
-	uint64_t *nco_freq_hz = uc_settings->nco_freq_hz[uc];
-	uint8_t *decimation = uc_settings->decimation[uc];
-	uint8_t nco0_datapath_mode = uc_settings->nco0_datapath_mode[uc];
+	// uint64_t *clk_hz = uc_settings->clk_hz[uc];
+	// uint32_t vmax = uc_settings->vmax[uc];
+	// uint32_t fc = uc_settings->fc[uc];
+	// uint8_t rterm = uc_settings->rterm[uc];
+	// uint32_t en_hp = uc_settings->en_hp[uc];
+	// uint32_t backoff = uc_settings->backoff[uc];
+	// uint32_t finmax = uc_settings->finmax[uc];
+	// uint64_t *nco_freq_hz = uc_settings->nco_freq_hz[uc];
+	// uint8_t *decimation = uc_settings->decimation[uc];
+	// uint8_t nco0_datapath_mode = uc_settings->nco0_datapath_mode[uc];
 	adi_cms_jesd_param_t *jtx_param = &uc_settings->jtx_param[uc];
 	int32_t ret;
 
@@ -476,7 +480,7 @@ static int32_t ad9083_setup(struct spi_device *spi , uint8_t uc)
 		return ret;
 
 	ret = adi_ad9083_rx_datapath_config_set(&phy->adi_ad9083,
-						nco0_datapath_mode, decimation, nco_freq_hz);
+						phy->nco0_datapath_mode, phy->decimation, phy->nco_freq_hz);
 	if (ret < 0)
 		return ret;
 
@@ -508,6 +512,32 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	of_property_read_u32(np, "adi,en_hp", &phy->en_hp);
 	of_property_read_u32(np, "adi,backoff", &phy->backoff);
 	of_property_read_u64(np, "adi,finmax", &phy->finmax);
+
+	/* adi_ad9083_rx_datapath_config_set */
+	of_property_read_u64_array(np,
+				   "adi,nco_freq",
+				   phy->nco_freq_hz,
+				   ARRAY_SIZE(phy->nco_freq_hz));
+	of_property_read_u8_array(np,
+				   "adi,decimation",
+				   phy->decimation,
+				   ARRAY_SIZE(phy->decimation));
+	of_property_read_u8(np, "adi,nco0_datapath_mode", &phy->nco0_datapath_mode);
+
+	printk(KERN_INFO
+	"ad9083_parse_dt\n"
+	"vmax: %d\n"
+	"rterm: %d\n"
+	"finmax: %lld\n"
+	"nco_freq: %lld %lld %lld\n"
+	"decimation: %d %d %d %d\n"
+	"nco0_datapath_mode: %d \n",
+	phy->vmax,
+	phy->rterm,
+	phy->finmax,
+	phy->nco_freq_hz[0], phy->nco_freq_hz[1], phy->nco_freq_hz[2],
+	phy->decimation[0], phy->decimation[1], phy->decimation[2], phy->decimation[3],
+	phy->nco0_datapath_mode);
 
 	/* JESD Link Config */
 

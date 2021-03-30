@@ -144,6 +144,10 @@
 		adi,finmax = /bits/ 64 <100000000>;
 		
 		/* adi_ad9083_rx_datapath_config_set */
+		adi,nco_freq = /bits/ 64 <0 0 0>;
+		adi,decimation = /bits/ 8 <AD9083_CIC_DEC_4 AD9083_J_DEC_4 0 0>;
+		adi,nco0_datapath_mode = /bits/ 8 <AD9083_DATAPATH_ADC_CIC_J>;
+		
 
 		/* adi_ad9083_jtx_startup */
 
