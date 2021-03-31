@@ -331,7 +331,6 @@ static int32_t ad9083_setup(struct spi_device *spi)
 	struct axiadc_converter *conv = spi_get_drvdata(spi);
 	struct ad9083_phy *phy = conv->phy;
 	adi_cms_chip_id_t chip_id;
-	adi_cms_jesd_param_t jtx_param;
 	int32_t ret;
 
 	ret = ad9083_request_clks(conv);
@@ -373,23 +372,7 @@ static int32_t ad9083_setup(struct spi_device *spi)
 	if (ret < 0)
 		return ret;
 
-	jtx_param.jesd_l = phy->jesd_param.jesd_l;	/*!< No of lanes */
-	jtx_param.jesd_f = phy->jesd_param.jesd_f;	/*!< No of octets in a frame */
-	jtx_param.jesd_m = phy->jesd_param.jesd_m;	/*!< No of converters */
-	jtx_param.jesd_s = phy->jesd_param.jesd_s;	/*!< No of samples */
-	jtx_param.jesd_hd = phy->jesd_param.jesd_hd;	/*!< High Density */
-	jtx_param.jesd_k = phy->jesd_param.jesd_k;	/*!< No of frames for a multi-frame */
-	jtx_param.jesd_n = phy->jesd_param.jesd_n;	/*!< Converter resolution */
-	jtx_param.jesd_np = phy->jesd_param.jesd_np;	/*!< Bit packing sample */
-	jtx_param.jesd_cf = phy->jesd_param.jesd_cf;	/*!< Parameter CF */
-	jtx_param.jesd_cs = phy->jesd_param.jesd_cs;	/*!< Parameter CS */
-	// jtx_param.jesd_did;				/*!< Device ID DID */
-	// jtx_param.jesd_bid;				/*!< Bank ID.  BID */
-	// jtx_param.jesd_lid0;				/*!< Lane ID for lane0 */
-	jtx_param.jesd_subclass = phy->jesd_param.jesd_subclass;	/*!< Subclass */
-	jtx_param.jesd_scr = phy->jesd_param.jesd_scr;	/*!< Scramble enable */
-
-	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, &jtx_param);
+	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, &phy->jesd_param);
 	if (ret < 0)
 		return ret;
 
@@ -421,6 +404,11 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	of_property_read_u8(np, "adi,nco0_datapath_mode", &phy->nco0_datapath_mode);
 
 	/* JESD Link Config */
+	memset(&phy->jesd_param, 0, sizeof(adi_cms_jesd_param_t));
+	
+	phy->jesd_param.jesd_s = 1;	/*!< No of samples */
+	phy->jesd_param.jesd_hd = 1;	/*!< High Density */
+	phy->jesd_param.jesd_scr = 1;	/*!< Scramble enable */
 
 	JESD204_LNK_READ_NUM_LANES(dev, np, &phy->jesd204_link,
 				   &phy->jesd_param.jesd_l, 4);
