@@ -13,26 +13,19 @@
 #include <linux/module.h>
 #include <linux/spi/spi.h>
 #include <asm/unaligned.h>
-
-
 #include <linux/kernel.h>
-
 #include <linux/of.h>
 #include <linux/slab.h>
 #include <linux/debugfs.h>
-
-
 #include "cf_axi_adc.h"
 #include <linux/jesd204/jesd204.h>
 #include <linux/jesd204/jesd204-of.h>
-
 #include "ad9083/adi_ad9083.h"
 
-#define IN_OUT_BUFF_SZ 3
+#define IN_OUT_BUFF_SZ		3
 #define MAX_REG_ADDR		0x1000
-
 #define CHIPID_AD9083		0x00EA
-#define CHIPID_MASK			0xFFFF
+#define CHIPID_MASK		0xFFFF
 
 struct ad9083_jesd204_priv {
 	struct ad9083_phy *phy;
@@ -44,29 +37,24 @@ struct ad9083_phy {
 	struct jesd204_dev	*jdev;
 	struct jesd204_link	jesd204_link;
 	adi_cms_jesd_param_t 	jesd_param;
-	
 	u32 vmax;
 	u64 fc;
 	u32 rterm;
 	u32 en_hp;
 	u32 backoff;
 	u64 finmax;
-
 	u64 nco_freq_hz[3];
 	u8 decimation[4];
 	u8 nco0_datapath_mode;
-	
 	u32 dcm;
 	u64 sampling_frequency_hz;
 	u32 uc;
-
-
-
 };
 
 static int ad9083_udelay(void *user_data, unsigned int us)
 {
 	usleep_range(us, (us * 110) / 100);
+
 	return 0;
 }
 
@@ -152,10 +140,12 @@ int ad9083_register_write(adi_ad9083_device_t *h,
 		inData[0] = (address >> 8) | 0x80;
 		inData[1] = address;
 		ret = h->hal_info.spi_xfer(h->hal_info.user_data, inData, outData, IN_OUT_BUFF_SZ);
-		if (ret == 0)
-	 		*data = outData[2];
+		if (ret != 0)
+			return ret;
+	 	
+		 *data = outData[2];
 	}
-	
+
 	return 0;
 }
 
@@ -238,25 +228,7 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	dev_dbg(dev, "%s:%d link_num %u reason %s\n", __func__,
 		__LINE__, lnk->link_id, jesd204_state_op_reason_str(reason));
 
-	 link = &phy->jesd204_link;
-
-
-
-
-	// lnk->num_lanes = 4;
-	// lnk->link_id = 0;
-	// lnk->octets_per_frame = 8;
-	// lnk->frames_per_multiframe = 32;
-	// lnk->converter_resolution = 16;
-	// lnk->bits_per_sample = 16;
-	// lnk->num_converters = 16;
-	// lnk->sample_rate = 125000000;
-	// lnk->subclass = 0;
-	// lnk->sample_rate_div = 1;
-	// lnk->jesd_encoder = JESD204_ENCODER_8B10B;
-	// lnk->jesd_version = JESD204_VERSION_B;
-
-	
+	link = &phy->jesd204_link;
 
 	jesd204_copy_link_params(lnk, link);
 	
@@ -265,39 +237,6 @@ static int ad9083_jesd204_link_init(struct jesd204_dev *jdev,
 	lnk->sample_rate_div = 1;
 	lnk->link_id = 0;
 
-	printk(KERN_INFO"ad9083_jesd204_link_init \n"
-	"num_lanes:%d \n," 
-	"link_id:%d \n," 
-	"octets_per_frame:%d \n, "
-	"frames_per_multiframe:%d \n, "
-	"converter_resolution:%d \n, "
-	"bits_per_sample:%d \n, "
-	"num_converters:%d \n, "
-	"sample_rate:%lld \n, "
-	"subclass:%d \n, "
-	"sample_rate_div:%d \n, "
-	"jesd_encoder:%d \n, "
-	"jesd_version:%d \n, ",
-	lnk->num_lanes,
-	lnk->link_id,
-	lnk->octets_per_frame,
-	lnk->frames_per_multiframe,
-	lnk->converter_resolution,
-	lnk->bits_per_sample,
-	lnk->num_converters,
-	lnk->sample_rate,
-	lnk->subclass,
-	lnk->sample_rate_div,
-	lnk->jesd_encoder,
-	lnk->jesd_version);
-
-
-
-	//if (phy->sysref_mode == AD9208_SYSREF_CONT)
-		// lnk->sysref.mode = JESD204_SYSREF_CONTINUOUS;
-	//else if (phy->sysref_mode == AD9208_SYSREF_ONESHOT)
-//		lnk->sysref.mode = JESD204_SYSREF_ONESHOT;
-	printk("ad9083_jesd204_link_init2\n");
 	return JESD204_STATE_CHANGE_DONE;
 }
 
@@ -384,35 +323,6 @@ static int ad9083_request_clks(struct axiadc_converter *conv)
 	
 	printk("ad9083_request_clks 5\n");
 
-
-	// printk("ad9083_request_clks 1\n");
-	// conv->clk = devm_clk_get(&conv->spi->dev, "adc_clk1");
-	// if (IS_ERR(conv->clk) || PTR_ERR(conv->clk) != -ENOENT)
-	// 	return PTR_ERR(conv->clk);
-
-	// if (phy->jdev)
-	// 	return 0;
-	// printk("ad9083_request_clks 2\n");
-	// // conv->lane_clk = devm_clk_get(&conv->spi->dev, "jesd_adc_clk");
-	// // if (IS_ERR(conv->lane_clk) && PTR_ERR(conv->lane_clk) != -ENOENT) {
-	// // 	pr_err("ad9083_request_clks 3: %d",PTR_ERR(conv->lane_clk));
-	// // 	return PTR_ERR(conv->lane_clk);
-	// // }
-
-	// printk("ad9083_request_clks 4\n");
-	// conv->sysref_clk = devm_clk_get(&conv->spi->dev, "adc_sysref1");
-	// if (IS_ERR(conv->sysref_clk)) {
-	// 	if (PTR_ERR(conv->sysref_clk) != -ENOENT)
-	// 		return PTR_ERR(conv->sysref_clk);
-	// 	conv->sysref_clk = NULL;
-	// 	printk("ad9083_request_clks 5\n");
-	// } else {
-	// 	ret = clk_prepare_enable(conv->sysref_clk);
-	// 	if (ret < 0)
-	// 		return ret;
-	// 	printk("ad9083_request_clks 6\n");
-	// }
-	// printk("ad9083_request_clks 7\n");
 	return 0;
 }
 
@@ -424,7 +334,6 @@ static int32_t ad9083_setup(struct spi_device *spi)
 	adi_cms_jesd_param_t jtx_param;
 	int32_t ret;
 
-	printk(KERN_INFO"ad9083 ad9083_setup spi->dev.init_name=%s\n", spi->dev.driver->name);
 	ret = ad9083_request_clks(conv);
 	if (ret)
 		return ret;
@@ -438,8 +347,6 @@ static int32_t ad9083_setup(struct spi_device *spi)
 		printk("ad9083 adi_ad9083_device_chip_id_get error 1\n");
 		return -ENOENT;
 	}
-
-	printk("ad9083 adi_ad9083_device_chip_id_get OK!!!\n");
 
 	/* software reset, resistor is not mounted */
 	ret = adi_ad9083_device_reset(&phy->adi_ad9083, AD9083_SOFT_RESET);
@@ -466,41 +373,36 @@ static int32_t ad9083_setup(struct spi_device *spi)
 	if (ret < 0)
 		return ret;
 
-	jtx_param.jesd_l = phy->jesd_param.jesd_l;                             /*!< No of lanes */
-	jtx_param.jesd_f = phy->jesd_param.jesd_f;                             /*!< No of octets in a frame */
-	jtx_param.jesd_m = phy->jesd_param.jesd_m;                             /*!< No of converters */
-	jtx_param.jesd_s = phy->jesd_param.jesd_s;                             /*!< No of samples */
-	jtx_param.jesd_hd = phy->jesd_param.jesd_hd;                            /*!< High Density */
-	jtx_param.jesd_k = phy->jesd_param.jesd_k;                            /*!< No of frames for a multi-frame */
-	jtx_param.jesd_n = phy->jesd_param.jesd_n;                             /*!< Converter resolution */
-	jtx_param.jesd_np = phy->jesd_param.jesd_np;                            /*!< Bit packing sample */
-	jtx_param.jesd_cf = phy->jesd_param.jesd_cf;                            /*!< Parameter CF */
-	jtx_param.jesd_cs = phy->jesd_param.jesd_cs;                            /*!< Parameter CS */
-	// jtx_param.jesd_did;                           /*!< Device ID DID */
-	// jtx_param.jesd_bid;                           /*!< Bank ID.  BID */
-	// jtx_param.jesd_lid0;                          /*!< Lane ID for lane0 */
-	jtx_param.jesd_subclass = phy->jesd_param.jesd_subclass;                      /*!< Subclass */
-	jtx_param.jesd_scr = phy->jesd_param.jesd_scr;                           /*!< Scramble enable */
-
+	jtx_param.jesd_l = phy->jesd_param.jesd_l;	/*!< No of lanes */
+	jtx_param.jesd_f = phy->jesd_param.jesd_f;	/*!< No of octets in a frame */
+	jtx_param.jesd_m = phy->jesd_param.jesd_m;	/*!< No of converters */
+	jtx_param.jesd_s = phy->jesd_param.jesd_s;	/*!< No of samples */
+	jtx_param.jesd_hd = phy->jesd_param.jesd_hd;	/*!< High Density */
+	jtx_param.jesd_k = phy->jesd_param.jesd_k;	/*!< No of frames for a multi-frame */
+	jtx_param.jesd_n = phy->jesd_param.jesd_n;	/*!< Converter resolution */
+	jtx_param.jesd_np = phy->jesd_param.jesd_np;	/*!< Bit packing sample */
+	jtx_param.jesd_cf = phy->jesd_param.jesd_cf;	/*!< Parameter CF */
+	jtx_param.jesd_cs = phy->jesd_param.jesd_cs;	/*!< Parameter CS */
+	// jtx_param.jesd_did;				/*!< Device ID DID */
+	// jtx_param.jesd_bid;				/*!< Bank ID.  BID */
+	// jtx_param.jesd_lid0;				/*!< Lane ID for lane0 */
+	jtx_param.jesd_subclass = phy->jesd_param.jesd_subclass;	/*!< Subclass */
+	jtx_param.jesd_scr = phy->jesd_param.jesd_scr;	/*!< Scramble enable */
 
 	ret = adi_ad9083_jtx_startup(&phy->adi_ad9083, &jtx_param);
 	if (ret < 0)
 		return ret;
 
-	printk("ad9083 ad9083_setup OK!!!\n");
 	return 0;
 }
 
 static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
-	// struct device_node *chan_np;
-	// int ret;
 
 	of_property_read_u64(np, "adi,sampling-frequency",
 			     &phy->sampling_frequency_hz);
 
-	/* adi_ad9083_rx_adc_config */
 	of_property_read_u32(np, "adi,vmax", &phy->vmax);
 	of_property_read_u64(np, "adi,fc", &phy->fc);
 	of_property_read_u32(np, "adi,rterm", &phy->rterm);
@@ -508,7 +410,6 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 	of_property_read_u32(np, "adi,backoff", &phy->backoff);
 	of_property_read_u64(np, "adi,finmax", &phy->finmax);
 
-	/* adi_ad9083_rx_datapath_config_set */
 	of_property_read_u64_array(np,
 				   "adi,nco_freq",
 				   phy->nco_freq_hz,
@@ -518,21 +419,6 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 				   phy->decimation,
 				   ARRAY_SIZE(phy->decimation));
 	of_property_read_u8(np, "adi,nco0_datapath_mode", &phy->nco0_datapath_mode);
-
-	printk(KERN_INFO
-	"ad9083_parse_dt\n"
-	"vmax: %d\n"
-	"rterm: %d\n"
-	"finmax: %lld\n"
-	"nco_freq: %lld %lld %lld\n"
-	"decimation: %d %d %d %d\n"
-	"nco0_datapath_mode: %d \n",
-	phy->vmax,
-	phy->rterm,
-	phy->finmax,
-	phy->nco_freq_hz[0], phy->nco_freq_hz[1], phy->nco_freq_hz[2],
-	phy->decimation[0], phy->decimation[1], phy->decimation[2], phy->decimation[3],
-	phy->nco0_datapath_mode);
 
 	/* JESD Link Config */
 
@@ -562,7 +448,6 @@ static int ad9083_parse_dt(struct ad9083_phy *phy, struct device *dev)
 
 enum {
 	ID_AD9083,
-
 };
 
 #define AIM_CHAN(_chan, _mod, _si, _bits, _sign)			\
@@ -610,7 +495,6 @@ static struct axiadc_chip_info axiadc_chip_info_tbl[] = {
 	},
 };
 
-
 static const struct iio_info ad9083_iio_info = {
 	.read_raw = &ad9083_read_raw,
 	.write_raw = &ad9083_write_raw,
@@ -622,7 +506,6 @@ static int ad9083_register_iiodev(struct axiadc_converter *conv)
 {
 	struct iio_dev *indio_dev;
 	struct spi_device *spi = conv->spi;
-	// struct ad9081_phy *phy = conv->phy;
 	int ret;
 
 	indio_dev = devm_iio_device_alloc(&spi->dev, 0);
@@ -656,36 +539,24 @@ static int ad9083_probe(struct spi_device *spi)
 	struct axiadc_converter *conv;
 	struct ad9083_phy *phy;
 	struct jesd204_dev *jdev;
-	// struct iio_dev *indio_dev;
 	struct ad9083_jesd204_priv *priv;
-//	struct ad9083_state *st;
-	
-	
 	int ret;
 
-	printk("==============================================ad9083 probed===============================================");
-	
-	if (!spi) {
+	if (!spi)
 		return -ENOENT;
-		printk("ad9083_0001 pointer null\n");
-	}
-	printk("ad9083_001\n");
 
 	jdev = devm_jesd204_dev_register(&spi->dev, &jesd204_ad9083_init);
-	printk("ad9083_01\n");
 	if (IS_ERR(jdev))
 		return PTR_ERR(jdev);
-	printk("ad9083_1\n");
+
 	conv = devm_kzalloc(&spi->dev, sizeof(*conv), GFP_KERNEL);
 	if (conv == NULL)
 		return -ENOMEM;
 	
-	printk("ad9083_2\n");
 	phy = devm_kzalloc(&spi->dev, sizeof(*phy), GFP_KERNEL);
 	if (phy == NULL)
 		return -ENOMEM;
 
-	printk("ad9083_3\n");
 	conv->adc_clkscale.mult = 1;
 	conv->adc_clkscale.div = 1;
 
@@ -694,7 +565,6 @@ static int ad9083_probe(struct spi_device *spi)
 	conv->phy = phy;
 	conv->chip_info = &axiadc_chip_info_tbl[0];
 
-	printk("ad9083_4\n");
 	if (jdev) {
 		phy->jdev = jdev;
 		priv = jesd204_dev_priv(jdev);
@@ -708,7 +578,6 @@ static int ad9083_probe(struct spi_device *spi)
 	phy->adi_ad9083.hal_info.addr_inc = SPI_ADDR_INC_AUTO;
 	phy->adi_ad9083.hal_info.log_write = ad9083_log_write;
 	
-	printk("ad9083_5\n");
 	ret = ad9083_parse_dt(phy, &spi->dev);
 	if (ret < 0) {
 		dev_err(&spi->dev, "Parsing devicetree failed (%d)\n", ret);
@@ -731,17 +600,14 @@ static int ad9083_probe(struct spi_device *spi)
 	 	return -ENODEV;
 	}
 
-	printk("ad9083_6\n");
 	ret = jesd204_fsm_start(jdev, JESD204_LINKS_ALL);
-    if (ret < 0) {
-        printk(KERN_INFO"jesd204_fsm_start failed (%d)\n", ret);
-        return ret;
-    }
-	printk("ad9083_7\n");
+	if (ret < 0) {
+		printk(KERN_INFO"jesd204_fsm_start failed (%d)\n", ret);
+		return ret;
+	}
 
 	return 0;
 }
-
 
 static const struct spi_device_id ad9083_id[] = {
 	{ "ad9083", 0 },
